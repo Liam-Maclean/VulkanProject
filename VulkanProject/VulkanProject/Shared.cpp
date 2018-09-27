@@ -1,6 +1,6 @@
 #include "Shared.h"
 
-void ErrorCheck(VkResult result)
+void vk::tools::ErrorCheck(VkResult result)
 {
 	if (result < 0)
 	{
@@ -74,7 +74,7 @@ void ErrorCheck(VkResult result)
 }
 
 //reads a shader file 
-std::vector<char> ReadShaderFile(const std::string & filename)
+std::vector<char> vk::tools::ReadShaderFile(const std::string & filename)
 {
 	//loads binary data from the file(Binary), starts at the end of the file (Ate)
 	std::ifstream file(filename, std::ios::ate | std::ios::binary);

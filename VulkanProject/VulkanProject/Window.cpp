@@ -247,7 +247,7 @@ VkShaderModule VulkanWindow::_CreateShaderModule(const std::vector<char>& code)
 	VkShaderModule shaderModule;
 
 	//run and error check result of vkCreateShaderModule
-	ErrorCheck(vkCreateShaderModule(_renderer->GetVulkanDevice(), &shader_module_create_info, nullptr, &shaderModule));
+	vk::tools::ErrorCheck(vkCreateShaderModule(_renderer->GetVulkanDevice(), &shader_module_create_info, nullptr, &shaderModule));
 
 	//return created shader module
 	return shaderModule;
@@ -310,7 +310,7 @@ void VulkanWindow::_CreateRenderPass()
 	render_pass_create_info.dependencyCount = 1;
 	render_pass_create_info.pDependencies = &dependency;
 
-	ErrorCheck(vkCreateRenderPass(_renderer->GetVulkanDevice(), &render_pass_create_info, nullptr, &_renderPass));
+	vk::tools::ErrorCheck(vkCreateRenderPass(_renderer->GetVulkanDevice(), &render_pass_create_info, nullptr, &_renderPass));
 }
 
 //Method to create graphics pipeline 
@@ -321,8 +321,8 @@ void VulkanWindow::_CreateGraphicsPipeline()
 	VkShaderModule fragShaderModule;
 	//loads the vert and frag shader from files using Utility read function
 	//*(Shared.h)
-	auto vertShaderCode = ReadShaderFile("C:/Users/Liam Maclean/Documents/VulkanProject/Shaders/vert.spv");
-	auto fragShaderCode = ReadShaderFile("C:/Users/Liam Maclean/Documents/VulkanProject/Shaders/frag.spv");
+	auto vertShaderCode = vk::tools::ReadShaderFile("C:/Users/Liam Maclean/Documents/VulkanProject/Shaders/vert.spv");
+	auto fragShaderCode = vk::tools::ReadShaderFile("C:/Users/Liam Maclean/Documents/VulkanProject/Shaders/frag.spv");
 
 	//Creates a shader module using the _CreateShaderModule method
 	vertShaderModule = _CreateShaderModule(vertShaderCode);
@@ -447,7 +447,7 @@ void VulkanWindow::_CreateGraphicsPipeline()
 	pipeline_layout_create_info.pSetLayouts = &_descriptorSetLayout;
 
 	//create and error check the pipeline layout
-	ErrorCheck(vkCreatePipelineLayout(_renderer->GetVulkanDevice(), &pipeline_layout_create_info, nullptr, &_pipelineLayout));
+	vk::tools::ErrorCheck(vkCreatePipelineLayout(_renderer->GetVulkanDevice(), &pipeline_layout_create_info, nullptr, &_pipelineLayout));
 
 	VkGraphicsPipelineCreateInfo pipeline_create_info = {};
 	pipeline_create_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -465,7 +465,7 @@ void VulkanWindow::_CreateGraphicsPipeline()
 	pipeline_create_info.subpass = 0;
 	pipeline_create_info.basePipelineHandle = VK_NULL_HANDLE;
 
-	ErrorCheck(vkCreateGraphicsPipelines(_renderer->GetVulkanDevice(), VK_NULL_HANDLE, 1, &pipeline_create_info, nullptr, &graphicsPipelines[PipelineType::standard]));
+	vk::tools::ErrorCheck(vkCreateGraphicsPipelines(_renderer->GetVulkanDevice(), VK_NULL_HANDLE, 1, &pipeline_create_info, nullptr, &graphicsPipelines[PipelineType::standard]));
 
 	rasterization_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 	rasterization_state_create_info.depthClampEnable = VK_FALSE;
@@ -491,7 +491,7 @@ void VulkanWindow::_CreateGraphicsPipeline()
 	pipeline_create_info.subpass = 0;
 	pipeline_create_info.basePipelineHandle = VK_NULL_HANDLE;
 
-	ErrorCheck(vkCreateGraphicsPipelines(_renderer->GetVulkanDevice(), VK_NULL_HANDLE, 1, &pipeline_create_info, nullptr, &graphicsPipelines[PipelineType::wireframe]));
+	vk::tools::ErrorCheck(vkCreateGraphicsPipelines(_renderer->GetVulkanDevice(), VK_NULL_HANDLE, 1, &pipeline_create_info, nullptr, &graphicsPipelines[PipelineType::wireframe]));
 
 	vkDestroyShaderModule(_renderer->GetVulkanDevice(), vertShaderModule, nullptr);
 	vkDestroyShaderModule(_renderer->GetVulkanDevice(), fragShaderModule, nullptr);
@@ -506,7 +506,7 @@ void VulkanWindow::_CreateCommandPool()
 	command_pool_create_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 	command_pool_create_info.queueFamilyIndex = queueFamilyIndices.graphicsFamily;
 
-	ErrorCheck(vkCreateCommandPool(_renderer->GetVulkanDevice(), &command_pool_create_info, nullptr, &_commandPool));
+	vk::tools::ErrorCheck(vkCreateCommandPool(_renderer->GetVulkanDevice(), &command_pool_create_info, nullptr, &_commandPool));
 }
 
 //Method for creating command buffers from pools
@@ -541,7 +541,7 @@ void VulkanWindow::_CreateDescriptorSetLayout()
 	layout_info.bindingCount = static_cast<uint32_t>(bindings.size());
 	layout_info.pBindings = bindings.data();
 
-	ErrorCheck(vkCreateDescriptorSetLayout(_renderer->GetVulkanDevice(), &layout_info, nullptr, &_descriptorSetLayout));
+	vk::tools::ErrorCheck(vkCreateDescriptorSetLayout(_renderer->GetVulkanDevice(), &layout_info, nullptr, &_descriptorSetLayout));
 }
 
 //Method for creating semaphores
@@ -560,9 +560,9 @@ void VulkanWindow::_CreateSemaphores()
 
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 	{
-		ErrorCheck(vkCreateSemaphore(_renderer->GetVulkanDevice(), &semaphore_create_info, nullptr, &_imageAvailableSemaphores[i]));
-		ErrorCheck(vkCreateSemaphore(_renderer->GetVulkanDevice(), &semaphore_create_info, nullptr, &_renderFinishedSemaphores[i]));
-		ErrorCheck(vkCreateFence(_renderer->GetVulkanDevice(), &fence_create_info, nullptr, &_inFlightFences[i]));
+		vk::tools::ErrorCheck(vkCreateSemaphore(_renderer->GetVulkanDevice(), &semaphore_create_info, nullptr, &_imageAvailableSemaphores[i]));
+		vk::tools::ErrorCheck(vkCreateSemaphore(_renderer->GetVulkanDevice(), &semaphore_create_info, nullptr, &_renderFinishedSemaphores[i]));
+		vk::tools::ErrorCheck(vkCreateFence(_renderer->GetVulkanDevice(), &fence_create_info, nullptr, &_inFlightFences[i]));
 	}
 }
 
@@ -604,7 +604,7 @@ void VulkanWindow::DrawFrame()
 	submit_info.pSignalSemaphores = signalSemaphores;
 	//
 	vkResetFences(_renderer->GetVulkanDevice(), 1, &_inFlightFences[currentFrame]);
-	ErrorCheck(vkQueueSubmit(_renderer->GetVulkanGraphicsQueue(), 1, &submit_info, _inFlightFences[currentFrame]));
+	vk::tools::ErrorCheck(vkQueueSubmit(_renderer->GetVulkanGraphicsQueue(), 1, &submit_info, _inFlightFences[currentFrame]));
 
 	VkPresentInfoKHR present_info = {};
 	present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -692,7 +692,7 @@ void VulkanWindow::_CreateTextureSampler()
 	sampler_info.minLod = 0.0f;
 	sampler_info.maxLod = 0.0f;
 
-	ErrorCheck(vkCreateSampler(_renderer->GetVulkanDevice(), &sampler_info, nullptr, &_textureSampler));
+	vk::tools::ErrorCheck(vkCreateSampler(_renderer->GetVulkanDevice(), &sampler_info, nullptr, &_textureSampler));
 
 }
 
@@ -714,7 +714,7 @@ void VulkanWindow::_CreateImage(uint32_t width, uint32_t height, VkFormat format
 	image_create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	image_create_info.samples = VK_SAMPLE_COUNT_1_BIT;
 
-	ErrorCheck(vkCreateImage(_renderer->GetVulkanDevice(), &image_create_info, nullptr, &image));
+	vk::tools::ErrorCheck(vkCreateImage(_renderer->GetVulkanDevice(), &image_create_info, nullptr, &image));
 
 	VkMemoryRequirements memRequirements;
 	vkGetImageMemoryRequirements(_renderer->GetVulkanDevice(), image, &memRequirements);
@@ -724,7 +724,7 @@ void VulkanWindow::_CreateImage(uint32_t width, uint32_t height, VkFormat format
 	memory_alloc_info.allocationSize = memRequirements.size;
 	memory_alloc_info.memoryTypeIndex = FindMemoryType(memRequirements.memoryTypeBits, properties);
 
-	ErrorCheck(vkAllocateMemory(_renderer->GetVulkanDevice(), &memory_alloc_info, nullptr, &imageMemory));
+	vk::tools::ErrorCheck(vkAllocateMemory(_renderer->GetVulkanDevice(), &memory_alloc_info, nullptr, &imageMemory));
 
 	vkBindImageMemory(_renderer->GetVulkanDevice(), image, imageMemory, 0);
 }
@@ -871,7 +871,7 @@ VkImageView VulkanWindow::_CreateImageView(VkImage image, VkFormat format, VkIma
 	view_info.subresourceRange.layerCount = 1;
 
 	VkImageView imageView;
-	ErrorCheck(vkCreateImageView(_renderer->GetVulkanDevice(), &view_info, nullptr, &imageView));
+	vk::tools::ErrorCheck(vkCreateImageView(_renderer->GetVulkanDevice(), &view_info, nullptr, &imageView));
 
 	return imageView;
 }
@@ -947,7 +947,7 @@ void VulkanWindow::Update()
 //Method to create a surface variable for glfw and vulkan support
 void VulkanWindow::_InitSurface()
 {
-	ErrorCheck(glfwCreateWindowSurface(_renderer->GetVulkanInstance(), _window, nullptr, &_surface));
+	vk::tools::ErrorCheck(glfwCreateWindowSurface(_renderer->GetVulkanInstance(), _window, nullptr, &_surface));
 }
 
 //Method to destroy the surface variable for glfw and vulkan support
@@ -1033,7 +1033,7 @@ void VulkanWindow::_CreateSwapChain()
 	//recreate the swapchain or reference an old one 
 	swap_chain_create_info.oldSwapchain = VK_NULL_HANDLE;
 
-	ErrorCheck(vkCreateSwapchainKHR(_renderer->GetVulkanDevice(), &swap_chain_create_info, nullptr, &_swapChain));
+	vk::tools::ErrorCheck(vkCreateSwapchainKHR(_renderer->GetVulkanDevice(), &swap_chain_create_info, nullptr, &_swapChain));
 
 	vkGetSwapchainImagesKHR(_renderer->GetVulkanDevice(), _swapChain, &imageCount, nullptr);
 	_swapChainImages.resize(imageCount);
@@ -1077,7 +1077,7 @@ void VulkanWindow::_CreateFramebuffers()
 		framebuffer_create_info.height = _swapChainExtent.height;
 		framebuffer_create_info.layers = 1;
 
-		ErrorCheck(vkCreateFramebuffer(_renderer->GetVulkanDevice(), &framebuffer_create_info, nullptr, &_swapChainFramebuffers[i]));
+		vk::tools::ErrorCheck(vkCreateFramebuffer(_renderer->GetVulkanDevice(), &framebuffer_create_info, nullptr, &_swapChainFramebuffers[i]));
 	}
 }
 
@@ -1114,7 +1114,7 @@ void VulkanWindow::_CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, Vk
 	buffer_create_info.usage = usage;
 	buffer_create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-	ErrorCheck(vkCreateBuffer(_renderer->GetVulkanDevice(), &buffer_create_info, nullptr, &buffer));
+	vk::tools::ErrorCheck(vkCreateBuffer(_renderer->GetVulkanDevice(), &buffer_create_info, nullptr, &buffer));
 
 	VkMemoryRequirements mem_requirements;
 	vkGetBufferMemoryRequirements(_renderer->GetVulkanDevice(), buffer, &mem_requirements);
@@ -1124,7 +1124,7 @@ void VulkanWindow::_CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, Vk
 	memory_allocate_info.allocationSize = mem_requirements.size;
 	memory_allocate_info.memoryTypeIndex = FindMemoryType(mem_requirements.memoryTypeBits, properties);
 
-	ErrorCheck(vkAllocateMemory(_renderer->GetVulkanDevice(), &memory_allocate_info, nullptr, &bufferMemory));
+	vk::tools::ErrorCheck(vkAllocateMemory(_renderer->GetVulkanDevice(), &memory_allocate_info, nullptr, &bufferMemory));
 
 	vkBindBufferMemory(_renderer->GetVulkanDevice(), buffer, bufferMemory, 0);
 }
@@ -1235,7 +1235,7 @@ void VulkanWindow::_CreateDescriptorPool()
 	pool_create_info.pPoolSizes = pool_sizes.data();
 	pool_create_info.maxSets = static_cast<uint32_t>(_swapChainImages.size());
 
-	ErrorCheck(vkCreateDescriptorPool(_renderer->GetVulkanDevice(), &pool_create_info, nullptr, &_descriptorPool));
+	vk::tools::ErrorCheck(vkCreateDescriptorPool(_renderer->GetVulkanDevice(), &pool_create_info, nullptr, &_descriptorPool));
 }
 
 //Method to create a descriptor set(s) 
@@ -1251,7 +1251,7 @@ void VulkanWindow::_CreateDescriptorSets()
 
 	_descriptorSets.resize(_swapChainImages.size());
 
-	ErrorCheck(vkAllocateDescriptorSets(_renderer->GetVulkanDevice(), &descriptor_alloc_info, &_descriptorSets[0]));
+	vk::tools::ErrorCheck(vkAllocateDescriptorSets(_renderer->GetVulkanDevice(), &descriptor_alloc_info, &_descriptorSets[0]));
 
 	for (size_t i = 0; i < _swapChainImages.size(); i++)
 	{

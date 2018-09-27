@@ -15,6 +15,7 @@ const std::vector<uint16_t> indices = {
 	//4, 5, 6, 6, 7, 4
 };
 
+
 class VulkanApplication : public VulkanWindow
 {
 public:
@@ -32,14 +33,9 @@ public:
 	
 	directionalLight dLight;
 
-	VkBuffer vertexBuffer;
-	VkBuffer lightBuffer;
-	VkBuffer indicesBuffer;
-	VkDeviceMemory vertexMemory;
-	VkDeviceMemory indicesMemory;
-	VkDeviceMemory lightBufferMemory;
-
-
+	vk::wrappers::Buffer vertexBuffer;
+	vk::wrappers::Buffer lightBuffer;
+	vk::wrappers::Buffer indicesBuffer;
 
 };
 

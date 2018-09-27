@@ -76,7 +76,7 @@ void Renderer::_InitInstance()
 	instance_create_info.pNext = &debug_callback_create_info;
 
 	//Create the instance using vkCreateInstance function, and error check
-	ErrorCheck(vkCreateInstance(&instance_create_info, nullptr, &_instance));
+	vk::tools::ErrorCheck(vkCreateInstance(&instance_create_info, nullptr, &_instance));
 
 }
 
@@ -271,7 +271,7 @@ void Renderer::_InitDevice()
 	device_create_info.ppEnabledExtensionNames = deviceExtensions.data();
 
 	//Create a device using the vkCreateDevice function, and error check that we have a device 
-	ErrorCheck(vkCreateDevice(_gpu, &device_create_info, nullptr, &_device));
+	vk::tools::ErrorCheck(vkCreateDevice(_gpu, &device_create_info, nullptr, &_device));
 
 	vkGetDeviceQueue(_device, _indices.graphicsFamily, 0, &_graphicsQueue);
 	vkGetDeviceQueue(_device, _indices.presentFamily, 0, &_presentQueue);

@@ -6,5 +6,23 @@
 #include <vector>
 #include <fstream>
 
-void ErrorCheck(VkResult result);
-std::vector<char> ReadShaderFile(const std::string& filename);
+
+namespace vk
+{
+	namespace wrappers
+	{
+		//Wrapper class for buffer holding
+		struct Buffer
+		{
+			VkBuffer buffer;
+			VkDeviceMemory memory;
+		};
+	}
+
+
+	namespace tools
+	{
+		void ErrorCheck(VkResult result);
+		std::vector<char> ReadShaderFile(const std::string& filename);
+	}
+}

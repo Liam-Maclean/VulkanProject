@@ -42,8 +42,8 @@ void VulkanApplication::Update()
 //Method for creating a buffers necessary for rendering 
 void VulkanApplication::CreateObjectBuffers()
 {
-	VulkanWindow::_CreateVertexBuffer(vertices, &vertexBuffer, &vertexMemory);
-	VulkanWindow::_CreateIndexBuffer(indices, &indicesBuffer, &indicesMemory);
+	VulkanWindow::_CreateVertexBuffer(vertices, &vertexBuffer.buffer, &vertexBuffer.memory);
+	VulkanWindow::_CreateIndexBuffer(indices, &indicesBuffer.buffer, &indicesBuffer.memory);
 }
 
 //Method to draw with the command buffers (Override)
@@ -57,7 +57,7 @@ void VulkanApplication::_CreateCommandBuffers()
 	command_buffer_allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	command_buffer_allocate_info.commandBufferCount = (uint32_t)_commandBuffers.size();
 
-	ErrorCheck(vkAllocateCommandBuffers(_renderer->GetVulkanDevice(), &command_buffer_allocate_info, _commandBuffers.data()));
+	vk::tools::ErrorCheck(vkAllocateCommandBuffers(_renderer->GetVulkanDevice(), &command_buffer_allocate_info, _commandBuffers.data()));
 
 	for (size_t i = 0; i < _commandBuffers.size(); i++)
 	{
@@ -65,7 +65,7 @@ void VulkanApplication::_CreateCommandBuffers()
 		command_buffer_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		command_buffer_begin_info.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 
-		ErrorCheck(vkBeginCommandBuffer(_commandBuffers[i], &command_buffer_begin_info));
+		vk::tools::ErrorCheck(vkBeginCommandBuffer(_commandBuffers[i], &command_buffer_begin_info));
 
 		VkRenderPassBeginInfo render_pass_begin_info = {};
 		render_pass_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -86,12 +86,12 @@ void VulkanApplication::_CreateCommandBuffers()
 
 			vkCmdBindPipeline(_commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelines[PipelineType::standard]);
 
-			VkBuffer vertexBuffers[] = { vertexBuffer};
+			VkBuffer vertexBuffers[] = { vertexBuffer.buffer};
 			VkDeviceSize offsets[] = { 0 };
 
 			vkCmdBindVertexBuffers(_commandBuffers[i], 0, 1, vertexBuffers, offsets);
 	
-			vkCmdBindIndexBuffer(_commandBuffers[i], indicesBuffer, 0, VK_INDEX_TYPE_UINT16);
+			vkCmdBindIndexBuffer(_commandBuffers[i], indicesBuffer.buffer, 0, VK_INDEX_TYPE_UINT16);
 
 			vkCmdBindDescriptorSets(_commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &_descriptorSets[i], 0, nullptr);
 
@@ -99,6 +99,6 @@ void VulkanApplication::_CreateCommandBuffers()
 
 		vkCmdEndRenderPass(_commandBuffers[i]);
 
-		ErrorCheck(vkEndCommandBuffer(_commandBuffers[i]));
+		vk::tools::ErrorCheck(vkEndCommandBuffer(_commandBuffers[i]));
 	}
 }
