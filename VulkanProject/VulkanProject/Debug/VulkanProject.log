@@ -1,12 +1,5 @@
-﻿  Main.cpp
-  Renderer.cpp
-c:\users\liam maclean\documents\github\vulkanproject\vulkanproject\vulkanproject\renderer.cpp(45): warning C4018: '<': signed/unsigned mismatch
-c:\users\liam maclean\documents\github\vulkanproject\vulkanproject\vulkanproject\renderer.cpp(53): warning C4018: '<': signed/unsigned mismatch
-  Shared.cpp
-  VulkanApplication.cpp
-  Window.cpp
-c:\users\liam maclean\documents\github\vulkanproject\vulkanproject\vulkanproject\window.cpp(301): warning C4552: '|': result of expression not used
-c:\users\liam maclean\documents\github\vulkanproject\vulkanproject\vulkanproject\window.cpp(561): warning C4018: '<': signed/unsigned mismatch
-c:\users\liam maclean\documents\github\vulkanproject\vulkanproject\vulkanproject\window.cpp(1348): warning C4018: '<': signed/unsigned mismatch
-  Generating Code...
-  VulkanProject.vcxproj -> C:\Users\Liam Maclean\Documents\GitHub\VulkanProject\VulkanProject\Debug\VulkanProject.exe
+﻿  Window.cpp
+m:\honours project\vulkanproject\vulkanproject\vulkanproject\window.cpp(301): warning C4552: '|': operator has no effect; expected operator with side-effect
+m:\honours project\vulkanproject\vulkanproject\vulkanproject\window.cpp(561): warning C4018: '<': signed/unsigned mismatch
+m:\honours project\vulkanproject\vulkanproject\vulkanproject\window.cpp(1348): warning C4018: '<': signed/unsigned mismatch
+  VulkanProject.vcxproj -> M:\Honours Project\VulkanProject\VulkanProject\Debug\VulkanProject.exe

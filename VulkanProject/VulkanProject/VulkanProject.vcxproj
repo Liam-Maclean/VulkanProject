@@ -70,9 +70,9 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>C:\VulkanSDK\1.1.73.0\Include;C:\Users\Liam Maclean\Documents\VulkanProject\GLFW\include;C:\Users\Liam Maclean\Documents\VulkanProject\glm;C:\Users\Liam Maclean\Documents\VulkanProject;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\VulkanSDK\1.1.73.0\Lib32;C:\Users\Liam Maclean\Documents\VulkanProject\GLFW\lib-vc2015;$(LibraryPath)</LibraryPath>
-    <ReferencePath>C:\Users\Liam Maclean\Documents\VulkanProject\Shaders;C:\Users\Liam Maclean\Documents\VulkanProject;$(ReferencePath)</ReferencePath>
+    <IncludePath>M:\Honours Project\VulkanProject\VulkanProject\VulkanSDK\1.1.73.0\Include;M:\Honours Project\VulkanProject\VulkanProject\GLFW\include;M:\Honours Project\VulkanProject\VulkanProject\glm;M:\Honours Project\VulkanProject\VulkanProject;$(IncludePath)</IncludePath>
+    <LibraryPath>M:\Honours Project\VulkanProject\VulkanProject\VulkanSDK\1.1.73.0\Lib32;M:\Honours Project\VulkanProject\VulkanProject\GLFW\lib-vc2015;$(LibraryPath)</LibraryPath>
+    <ReferencePath>M:\Honours Project\VulkanProject\VulkanProject\Shaders;M:\Honours Project\VulkanProject\VulkanProject;$(ReferencePath)</ReferencePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <IncludePath>C:\VulkanSDK\1.1.73.0\Include;C:\Users\Liam Maclean\Documents\VulkanProject\GLFW\include;C:\Users\Liam Maclean\Documents\VulkanProject\glm;C:\Users\Liam Maclean\Documents\VulkanProject;$(IncludePath)</IncludePath>
@@ -93,7 +93,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\Liam Maclean\Documents\VulkanProject\GLFW;C:\Users\Liam Maclean\Documents\VulkanProject;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>M:\Honours Project\VulkanProject\VulkanProject\GLFW;M:\Honours Project\VulkanProject\VulkanProject;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalDependencies>vulkan-1.lib;glfw3.lib;glfw3dll.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -161,6 +161,7 @@
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="Shared.h" />
     <ClInclude Include="VulkanApplication.h" />
+    <ClInclude Include="VulkanTexture.h" />
     <ClInclude Include="Window.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

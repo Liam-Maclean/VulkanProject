@@ -321,8 +321,8 @@ void VulkanWindow::_CreateGraphicsPipeline()
 	VkShaderModule fragShaderModule;
 	//loads the vert and frag shader from files using Utility read function
 	//*(Shared.h)
-	auto vertShaderCode = vk::tools::ReadShaderFile("C:/Users/Liam Maclean/Documents/VulkanProject/Shaders/vert.spv");
-	auto fragShaderCode = vk::tools::ReadShaderFile("C:/Users/Liam Maclean/Documents/VulkanProject/Shaders/frag.spv");
+	auto vertShaderCode = vk::tools::ReadShaderFile("M:/Honours Project/VulkanProject/VulkanProject/Shaders/vert.spv");
+	auto fragShaderCode = vk::tools::ReadShaderFile("M:/Honours Project/VulkanProject/VulkanProject/Shaders/frag.spv");
 
 	//Creates a shader module using the _CreateShaderModule method
 	vertShaderModule = _CreateShaderModule(vertShaderCode);
@@ -1155,7 +1155,7 @@ void VulkanWindow::_CreateVertexBuffer(const std::vector<Vertex> vertices, VkBuf
 		memcpy(data, vertices.data(), (size_t)bufferSize);
 	vkUnmapMemory(_renderer->GetVulkanDevice(), stagingBufferMemory);
 
-	_CreateBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, *vertexBuffer, *vertexBufferMemory);
+	_CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, *vertexBuffer, *vertexBufferMemory);
 	_CopyBuffer(stagingBuffer, *vertexBuffer, bufferSize);
 
 	vkDestroyBuffer(_renderer->GetVulkanDevice(), stagingBuffer, nullptr);
@@ -1166,7 +1166,7 @@ void VulkanWindow::_CreateVertexBuffer(const std::vector<Vertex> vertices, VkBuf
 void VulkanWindow::_CreateVertexBuffer(directionalLight lightData, VkBuffer* lightBuffer, VkDeviceMemory* lightBufferMemory)
 {
 	VkDeviceSize bufferSize = sizeof(lightData);
-
+	 
 	VkBuffer stagingBuffer;
 	VkDeviceMemory stagingBufferMemory;
 	_CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
@@ -1176,7 +1176,7 @@ void VulkanWindow::_CreateVertexBuffer(directionalLight lightData, VkBuffer* lig
 	memcpy(data, &lightData, (size_t)bufferSize);
 	vkUnmapMemory(_renderer->GetVulkanDevice(), stagingBufferMemory);
 
-	_CreateBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, *lightBuffer, *lightBufferMemory);
+	_CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, *lightBuffer, *lightBufferMemory);
 	_CopyBuffer(stagingBuffer, *lightBuffer, bufferSize);
 
 	vkDestroyBuffer(_renderer->GetVulkanDevice(), stagingBuffer, nullptr);
