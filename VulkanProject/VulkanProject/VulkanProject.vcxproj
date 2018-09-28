@@ -70,12 +70,12 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>C:\VulkanSDK\1.1.73.0\Include;C:\Users\Liam Maclean\Documents\VulkanProject\GLFW\include;C:\Users\Liam Maclean\Documents\VulkanProject\glm;C:\Users\Liam Maclean\Documents\VulkanProject;$(IncludePath)</IncludePath>
+    <IncludePath>C:\VulkanSDK\1.1.73.0\Include;C:\Users\Liam Maclean\Documents\VulkanProject\GLFW\include;C:\Users\Liam Maclean\Documents\VulkanProject\glm;C:\Users\Liam Maclean\Documents\VulkanProject;C:\Users\Liam Maclean\Documents\GitHub\VulkanProject\VulkanProject\TinyObjLoader;$(IncludePath)</IncludePath>
     <LibraryPath>C:\VulkanSDK\1.1.73.0\Lib32;C:\Users\Liam Maclean\Documents\VulkanProject\GLFW\lib-vc2015;$(LibraryPath)</LibraryPath>
     <ReferencePath>C:\Users\Liam Maclean\Documents\VulkanProject\Shaders;C:\Users\Liam Maclean\Documents\VulkanProject;$(ReferencePath)</ReferencePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>C:\VulkanSDK\1.1.73.0\Include;C:\Users\Liam Maclean\Documents\VulkanProject\GLFW\include;C:\Users\Liam Maclean\Documents\VulkanProject\glm;C:\Users\Liam Maclean\Documents\VulkanProject;$(IncludePath)</IncludePath>
+    <IncludePath>C:\VulkanSDK\1.1.73.0\Include;C:\Users\Liam Maclean\Documents\VulkanProject\GLFW\include;C:\Users\Liam Maclean\Documents\VulkanProject\glm;C:\Users\Liam Maclean\Documents\VulkanProject;C:\Users\Liam Maclean\Documents\GitHub\VulkanProject\VulkanProject\TinyObjLoader;$(IncludePath)</IncludePath>
     <LibraryPath>C:\VulkanSDK\1.1.73.0\Lib32;C:\Users\Liam Maclean\Documents\VulkanProject\GLFW\lib-vc2015;$(LibraryPath)</LibraryPath>
     <ReferencePath>C:\Users\Liam Maclean\Documents\VulkanProject\Shaders;C:\Users\Liam Maclean\Documents\VulkanProject;$(ReferencePath)</ReferencePath>
   </PropertyGroup>
@@ -93,7 +93,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\Liam Maclean\Documents\VulkanProject\GLFW;C:\Users\Liam Maclean\Documents\VulkanProject;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Liam Maclean\Documents\VulkanProject\GLFW;C:\Users\Liam Maclean\Documents\VulkanProject;C:\Users\Liam Maclean\Documents\GitHub\VulkanProject\VulkanProject\TinyObjLoader;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalDependencies>vulkan-1.lib;glfw3.lib;glfw3dll.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -121,7 +121,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\Liam Maclean\Documents\VulkanProject\GLFW;C:\Users\Liam Maclean\Documents\VulkanProject;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Liam Maclean\Documents\VulkanProject\GLFW;C:\Users\Liam Maclean\Documents\VulkanProject;C:\Users\Liam Maclean\Documents\GitHub\VulkanProject\VulkanProject\TinyObjLoader;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -148,7 +148,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="BaseModel.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Shared.cpp" />

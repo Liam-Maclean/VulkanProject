@@ -66,6 +66,10 @@ struct Vertex {
 
 		return attribute_descriptions;
 	}
+
+	bool operator==(const Vertex& other) const {
+		return pos == other.pos && color == other.color && texCoord == other.texCoord;
+	}
 };
 
 struct directionalLight
@@ -190,9 +194,6 @@ protected:
 	virtual void Update();
 	virtual void _CreateCommandBuffers();
 	virtual void _UpdateUniformBuffer(uint32_t imageIndex);
-	void _CreateVertexBuffer(const std::vector<Vertex> vertices, VkBuffer* vertexBuffer, VkDeviceMemory* vertexBufferMemory);
-	void _CreateVertexBuffer(directionalLight lightData, VkBuffer* lightBuffer, VkDeviceMemory* lightBufferMemory);
-	void _CreateIndexBuffer(const std::vector<uint16_t> indices, VkBuffer* indexBuffer, VkDeviceMemory* indexBufferMemory);
 	virtual void _CreateUniformBuffer();
 
 

@@ -1,6 +1,7 @@
 #include "Window.h"
 #include "Renderer.h"
 #include "Shared.h"
+#include "BaseModel.h"
 #pragma once
 
 const std::vector<Vertex> vertices = {
@@ -31,6 +32,12 @@ public:
 	void Update() override;
 	void _CreateCommandBuffers() override;
 	
+	void _CreateVertexBuffer(VkDevice device, const std::vector<Vertex> vertices, VkBuffer* vertexBuffer, VkDeviceMemory* vertexBufferMemory);
+	void _CreateVertexBuffer(VkDevice device, directionalLight lightData, VkBuffer* lightBuffer, VkDeviceMemory* lightBufferMemory);
+	void _CreateIndexBuffer(VkDevice device, const std::vector<uint32_t> indices, VkBuffer* indexBuffer, VkDeviceMemory* indexBufferMemory);
+
+	Mesh triangleMesh;
+
 	directionalLight dLight;
 
 	vk::wrappers::Buffer vertexBuffer;

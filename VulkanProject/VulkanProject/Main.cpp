@@ -1,7 +1,11 @@
 #pragma once
+
+
+#define TINYOBJLOADER_IMPLEMENTATION
 #include "Renderer.h"
 #include "Window.h"
 #include "VulkanApplication.h"
+
 int main()
 {
 	Renderer r;

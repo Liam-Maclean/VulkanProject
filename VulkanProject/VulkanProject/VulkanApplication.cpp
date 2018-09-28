@@ -14,6 +14,7 @@ void VulkanApplication::InitialiseVulkanApplication()
 	_CreateTextureImage();
 	_CreateTextureImageView();
 	_CreateTextureSampler();
+	triangleMesh.LoadMeshFromFile("C:/Users/Liam Maclean/Documents/GitHub/VulkanProject/VulkanProject/VulkanProject/Textures/Avent.obj");
 	CreateObjectBuffers();
 	_CreateUniformBuffer();
 	_CreateDescriptorPool();
@@ -21,17 +22,16 @@ void VulkanApplication::InitialiseVulkanApplication()
 	_CreateCommandBuffers();
 	_CreateSemaphores();
 	Update();
-
-
-	dLight.diffuseColor = glm::vec3(1.0f, 0.0f, 0.0f);
-	dLight.direction = glm::vec3(-0.5f, -0.5f, 0.0f);
-
-	
 }
 
 VulkanApplication::~VulkanApplication()
 {
 
+	vkDestroyBuffer(_renderer->GetVulkanDevice(), triangleMesh.vertexBuffer.buffer, nullptr);
+	vkFreeMemory(_renderer->GetVulkanDevice(), triangleMesh.vertexBuffer.memory, nullptr);
+
+	vkDestroyBuffer(_renderer->GetVulkanDevice(), triangleMesh.indicesBuffer.buffer, nullptr);
+	vkFreeMemory(_renderer->GetVulkanDevice(), triangleMesh.indicesBuffer.memory, nullptr);
 }
 
 void VulkanApplication::Update()
@@ -39,11 +39,78 @@ void VulkanApplication::Update()
 	VulkanWindow::Update();
 }
 
+//Method for creating vertex buffer
+//*Performs the staging buffer process to convert to GPU memory
+void VulkanApplication::_CreateVertexBuffer(VkDevice device, const std::vector<Vertex> vertices, VkBuffer* vertexBuffer, VkDeviceMemory* vertexBufferMemory)
+{
+	VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+
+	VkBuffer stagingBuffer;
+	VkDeviceMemory stagingBufferMemory;
+	_CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+	void* data;
+	vkMapMemory(_renderer->GetVulkanDevice(), stagingBufferMemory, 0, bufferSize, 0, &data);
+	memcpy(data, vertices.data(), (size_t)bufferSize);
+	vkUnmapMemory(_renderer->GetVulkanDevice(), stagingBufferMemory);
+
+	_CreateBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, *vertexBuffer, *vertexBufferMemory);
+	_CopyBuffer(stagingBuffer, *vertexBuffer, bufferSize);
+
+	vkDestroyBuffer(_renderer->GetVulkanDevice(), stagingBuffer, nullptr);
+	vkFreeMemory(_renderer->GetVulkanDevice(), stagingBufferMemory, nullptr);
+}
+
+//Method for creating vertex buffer for lighting
+//*Performs the staging buffer process to convert to GPU memory
+void VulkanApplication::_CreateVertexBuffer(VkDevice device, directionalLight lightData, VkBuffer* lightBuffer, VkDeviceMemory* lightBufferMemory)
+{
+	VkDeviceSize bufferSize = sizeof(lightData);
+
+	VkBuffer stagingBuffer;
+	VkDeviceMemory stagingBufferMemory;
+	_CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+	void* data;
+	vkMapMemory(_renderer->GetVulkanDevice(), stagingBufferMemory, 0, bufferSize, 0, &data);
+	memcpy(data, &lightData, (size_t)bufferSize);
+	vkUnmapMemory(_renderer->GetVulkanDevice(), stagingBufferMemory);
+
+	_CreateBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, *lightBuffer, *lightBufferMemory);
+	_CopyBuffer(stagingBuffer, *lightBuffer, bufferSize);
+
+	vkDestroyBuffer(_renderer->GetVulkanDevice(), stagingBuffer, nullptr);
+	vkFreeMemory(_renderer->GetVulkanDevice(), stagingBufferMemory, nullptr);
+}
+
+//Method for creating index buffer
+//*Performs the staging buffer process to convert to GPU memory
+void VulkanApplication::_CreateIndexBuffer(VkDevice device, const std::vector<uint32_t> indices, VkBuffer* indexBuffer, VkDeviceMemory* indexBufferMemory)
+{
+	VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+
+	VkBuffer stagingBuffer;
+	VkDeviceMemory stagingBufferMemory;
+	_CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+	void* data;
+	vkMapMemory(_renderer->GetVulkanDevice(), stagingBufferMemory, 0, bufferSize, 0, &data);
+	memcpy(data, indices.data(), (size_t)bufferSize);
+	vkUnmapMemory(_renderer->GetVulkanDevice(), stagingBufferMemory);
+
+	_CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, *indexBuffer, *indexBufferMemory);
+
+	_CopyBuffer(stagingBuffer, *indexBuffer, bufferSize);
+
+	vkDestroyBuffer(_renderer->GetVulkanDevice(), stagingBuffer, nullptr);
+	vkFreeMemory(_renderer->GetVulkanDevice(), stagingBufferMemory, nullptr);
+}
+
 //Method for creating a buffers necessary for rendering 
 void VulkanApplication::CreateObjectBuffers()
 {
-	VulkanWindow::_CreateVertexBuffer(vertices, &vertexBuffer.buffer, &vertexBuffer.memory);
-	VulkanWindow::_CreateIndexBuffer(indices, &indicesBuffer.buffer, &indicesBuffer.memory);
+	VulkanApplication::_CreateVertexBuffer(_renderer->GetVulkanDevice(), triangleMesh.vertices, &triangleMesh.vertexBuffer.buffer, &triangleMesh.vertexBuffer.memory);
+	VulkanApplication::_CreateIndexBuffer(_renderer->GetVulkanDevice(), triangleMesh.indices, &triangleMesh.indicesBuffer.buffer, &triangleMesh.indicesBuffer.memory);
 }
 
 //Method to draw with the command buffers (Override)
@@ -86,16 +153,15 @@ void VulkanApplication::_CreateCommandBuffers()
 
 			vkCmdBindPipeline(_commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelines[PipelineType::standard]);
 
-			VkBuffer vertexBuffers[] = { vertexBuffer.buffer};
+			
+			VkBuffer vertexBuffers[] = { triangleMesh.vertexBuffer.buffer};
 			VkDeviceSize offsets[] = { 0 };
 
 			vkCmdBindVertexBuffers(_commandBuffers[i], 0, 1, vertexBuffers, offsets);
-	
-			vkCmdBindIndexBuffer(_commandBuffers[i], indicesBuffer.buffer, 0, VK_INDEX_TYPE_UINT16);
-
+			vkCmdBindIndexBuffer(_commandBuffers[i], triangleMesh.indicesBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
 			vkCmdBindDescriptorSets(_commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &_descriptorSets[i], 0, nullptr);
 
-			vkCmdDrawIndexed(_commandBuffers[i], static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+			vkCmdDrawIndexed(_commandBuffers[i], static_cast<uint32_t>(triangleMesh.indices.size()), 1, 0, 0, 0);
 
 		vkCmdEndRenderPass(_commandBuffers[i]);
 
