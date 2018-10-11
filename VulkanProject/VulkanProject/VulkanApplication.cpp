@@ -14,7 +14,7 @@ void VulkanApplication::InitialiseVulkanApplication()
 	_CreateTextureImage();
 	_CreateTextureImageView();
 	_CreateTextureSampler();
-	triangleMesh.LoadMeshFromFile("C:/Users/Liam Maclean/Documents/GitHub/VulkanProject/VulkanProject/VulkanProject/Textures/Avent.obj");
+	//triangleMesh.LoadMeshFromFile("C:/Users/Liam Maclean/Documents/GitHub/VulkanProject/VulkanProject/VulkanProject/Textures/Avent.obj");
 	CreateObjectBuffers();
 	_CreateUniformBuffer();
 	_CreateDescriptorPool();
@@ -106,6 +106,149 @@ void VulkanApplication::_CreateIndexBuffer(VkDevice device, const std::vector<ui
 	vkFreeMemory(_renderer->GetVulkanDevice(), stagingBufferMemory, nullptr);
 }
 
+
+//Creates the offscreen framebuffer and attachments for the G-Buffer
+void VulkanApplication::CreateGBuffer()
+{
+	//Off Screen framebuffer for deferred rendering
+
+	deferredOffScreenFrameBuffer.width = TEX_DIMENSIONS;
+	deferredOffScreenFrameBuffer.height = TEX_DIMENSIONS;
+
+	//Create the color attachments for each screen render
+	_CreateAttachment(VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, &deferredOffScreenFrameBuffer.position, deferredOffScreenFrameBuffer);
+	_CreateAttachment(VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, &deferredOffScreenFrameBuffer.normal, deferredOffScreenFrameBuffer);
+	_CreateAttachment(VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, &deferredOffScreenFrameBuffer.albedo, deferredOffScreenFrameBuffer);
+
+	//depth attachment
+
+	//Find Depth Format
+	VkFormat DepthFormat;
+	DepthFormat = _FindDepthFormat();
+
+	_CreateAttachment(DepthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, &deferredOffScreenFrameBuffer.depth, deferredOffScreenFrameBuffer);
+
+
+	//Attachment descriptions for renderpass 
+	std::array<VkAttachmentDescription, 4> attachmentDescs = {};
+
+	for (uint32_t i = 0; i < attachmentDescs.size(); i++)
+	{
+		attachmentDescs[i].samples = VK_SAMPLE_COUNT_1_BIT;
+		attachmentDescs[i].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		attachmentDescs[i].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		attachmentDescs[i].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		attachmentDescs[i].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+
+		//if we're on the depth image description
+		if (i = 3)
+		{
+			attachmentDescs[i].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			attachmentDescs[i].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		}
+		else
+		{
+			attachmentDescs[i].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+			attachmentDescs[i].finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		}
+	}
+
+	//formats
+	attachmentDescs[0].format = deferredOffScreenFrameBuffer.position.format;
+	attachmentDescs[1].format = deferredOffScreenFrameBuffer.normal.format;
+	attachmentDescs[2].format = deferredOffScreenFrameBuffer.albedo.format;
+	attachmentDescs[3].format = deferredOffScreenFrameBuffer.depth.format;
+
+	std::vector<VkAttachmentReference> colorReferences;
+	colorReferences.push_back({ 0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
+	colorReferences.push_back({ 1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
+	colorReferences.push_back({ 2, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
+
+	VkAttachmentReference depthReference = {};
+	depthReference.attachment = 3;
+	depthReference.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+	VkSubpassDescription subpass = {};
+	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+	subpass.pColorAttachments = colorReferences.data();
+	subpass.colorAttachmentCount = static_cast<uint32_t>(colorReferences.size());
+	subpass.pDepthStencilAttachment = &depthReference;
+
+	//Subpass dependencies
+	std::array<VkSubpassDependency, 2> dependencies;
+
+	dependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;
+	dependencies[0].dstSubpass = 0;
+	dependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+	dependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+	dependencies[0].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	dependencies[0].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+	dependencies[1].srcSubpass = 0;
+	dependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
+	dependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependencies[1].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+	dependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	dependencies[1].dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+	dependencies[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+
+	//Create the render pass using the attachments and dependencies data
+	VkRenderPassCreateInfo renderPassInfo = {};
+	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+	renderPassInfo.pAttachments = attachmentDescs.data();
+	renderPassInfo.attachmentCount = static_cast<uint32_t>(attachmentDescs.size());
+	renderPassInfo.subpassCount = 1;
+	renderPassInfo.pSubpasses = &subpass;
+	renderPassInfo.dependencyCount = 2;
+	renderPassInfo.pDependencies = dependencies.data();
+
+	//Create the render pass to go into the frameBuffer struct
+	vk::tools::ErrorCheck(vkCreateRenderPass(_renderer->GetVulkanDevice(), &renderPassInfo, nullptr, &deferredOffScreenFrameBuffer.renderPass));
+
+	std::array<VkImageView, 4> attachments;
+	attachments[0] = deferredOffScreenFrameBuffer.position.view;
+	attachments[1] = deferredOffScreenFrameBuffer.normal.view;
+	attachments[2] = deferredOffScreenFrameBuffer.albedo.view;
+	attachments[3] = deferredOffScreenFrameBuffer.depth.view;
+
+	VkFramebufferCreateInfo frameBufferCreateInfo = {};
+	frameBufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+	frameBufferCreateInfo.pNext = NULL;
+	frameBufferCreateInfo.renderPass = deferredOffScreenFrameBuffer.renderPass;
+	frameBufferCreateInfo.pAttachments = attachments.data();
+	frameBufferCreateInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
+	frameBufferCreateInfo.width = deferredOffScreenFrameBuffer.width;
+	frameBufferCreateInfo.height = deferredOffScreenFrameBuffer.height;
+	frameBufferCreateInfo.layers = 1;
+	vk::tools::ErrorCheck(vkCreateFramebuffer(_renderer->GetVulkanDevice(), &frameBufferCreateInfo, nullptr, &deferredOffScreenFrameBuffer.frameBuffer));
+
+
+	//Create color sampler to sample from the color attachments.
+	VkSamplerCreateInfo samplerCreateInfo = {};
+	samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+	samplerCreateInfo.magFilter = VK_FILTER_NEAREST;
+	samplerCreateInfo.minFilter = VK_FILTER_NEAREST;
+	samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+	samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+	samplerCreateInfo.addressModeV = samplerCreateInfo.addressModeU;
+	samplerCreateInfo.addressModeW = samplerCreateInfo.addressModeU;
+	samplerCreateInfo.mipLodBias = 0.0f;
+	samplerCreateInfo.maxAnisotropy = 1.0f;
+	samplerCreateInfo.minLod = 0.0f;
+	samplerCreateInfo.maxLod = 1.0f;
+	samplerCreateInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+	vk::tools::ErrorCheck(vkCreateSampler(_renderer->GetVulkanDevice(), &samplerCreateInfo, nullptr, &colorSampler));
+
+
+}
+
+void VulkanApplication::CreateDeferredCommandBuffers()
+{
+
+
+}
+
 //Method for creating a buffers necessary for rendering 
 void VulkanApplication::CreateObjectBuffers()
 {
@@ -113,26 +256,33 @@ void VulkanApplication::CreateObjectBuffers()
 	VulkanApplication::_CreateIndexBuffer(_renderer->GetVulkanDevice(), triangleMesh.indices, &triangleMesh.indicesBuffer.buffer, &triangleMesh.indicesBuffer.memory);
 }
 
+void VulkanApplication::SceneSetup()
+{
+	
+
+}
+
+
 //Method to draw with the command buffers (Override)
 void VulkanApplication::_CreateCommandBuffers()
 {
-	_commandBuffers.resize(_swapChainFramebuffers.size());
+	_drawCommandBuffers.resize(_swapChainFramebuffers.size());
 
 	VkCommandBufferAllocateInfo command_buffer_allocate_info = {};
 	command_buffer_allocate_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	command_buffer_allocate_info.commandPool = _commandPool;
 	command_buffer_allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	command_buffer_allocate_info.commandBufferCount = (uint32_t)_commandBuffers.size();
+	command_buffer_allocate_info.commandBufferCount = (uint32_t)_drawCommandBuffers.size();
 
-	vk::tools::ErrorCheck(vkAllocateCommandBuffers(_renderer->GetVulkanDevice(), &command_buffer_allocate_info, _commandBuffers.data()));
+	vk::tools::ErrorCheck(vkAllocateCommandBuffers(_renderer->GetVulkanDevice(), &command_buffer_allocate_info, _drawCommandBuffers.data()));
 
-	for (size_t i = 0; i < _commandBuffers.size(); i++)
+	for (size_t i = 0; i < _drawCommandBuffers.size(); i++)
 	{
 		VkCommandBufferBeginInfo command_buffer_begin_info = {};
 		command_buffer_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		command_buffer_begin_info.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
 
-		vk::tools::ErrorCheck(vkBeginCommandBuffer(_commandBuffers[i], &command_buffer_begin_info));
+		vk::tools::ErrorCheck(vkBeginCommandBuffer(_drawCommandBuffers[i], &command_buffer_begin_info));
 
 		VkRenderPassBeginInfo render_pass_begin_info = {};
 		render_pass_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -149,22 +299,22 @@ void VulkanApplication::_CreateCommandBuffers()
 		render_pass_begin_info.pClearValues = clearValues.data();
 
 
-		vkCmdBeginRenderPass(_commandBuffers[i], &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
+		vkCmdBeginRenderPass(_drawCommandBuffers[i], &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 
-			vkCmdBindPipeline(_commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelines[PipelineType::standard]);
+			vkCmdBindPipeline(_drawCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelines[PipelineType::standard]);
 
 			
 			VkBuffer vertexBuffers[] = { triangleMesh.vertexBuffer.buffer};
 			VkDeviceSize offsets[] = { 0 };
 
-			vkCmdBindVertexBuffers(_commandBuffers[i], 0, 1, vertexBuffers, offsets);
-			vkCmdBindIndexBuffer(_commandBuffers[i], triangleMesh.indicesBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
-			vkCmdBindDescriptorSets(_commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &_descriptorSets[i], 0, nullptr);
+			vkCmdBindVertexBuffers(_drawCommandBuffers[i], 0, 1, vertexBuffers, offsets);
+			vkCmdBindIndexBuffer(_drawCommandBuffers[i], triangleMesh.indicesBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+			vkCmdBindDescriptorSets(_drawCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &_descriptorSets[i], 0, nullptr);
 
-			vkCmdDrawIndexed(_commandBuffers[i], static_cast<uint32_t>(triangleMesh.indices.size()), 1, 0, 0, 0);
+			vkCmdDrawIndexed(_drawCommandBuffers[i], static_cast<uint32_t>(triangleMesh.indices.size()), 1, 0, 0, 0);
 
-		vkCmdEndRenderPass(_commandBuffers[i]);
+		vkCmdEndRenderPass(_drawCommandBuffers[i]);
 
-		vk::tools::ErrorCheck(vkEndCommandBuffer(_commandBuffers[i]));
+		vk::tools::ErrorCheck(vkEndCommandBuffer(_drawCommandBuffers[i]));
 	}
 }

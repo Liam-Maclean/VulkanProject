@@ -29,6 +29,7 @@ public:
 	//==Device==
 	void _InitDevice();
 	void _DeInitDevice();
+	uint32_t _GetMemoryType(uint32_t memTypeBits, VkMemoryPropertyFlags propertyFlags, VkBool32 *memTypeFound = nullptr);
 	QueueFamilyIndices _FindQueueFamilies(VkPhysicalDevice device);
 	bool _IsDeviceSuitable(VkPhysicalDevice device);
 	bool _CheckDeviceExtentionSupport(VkPhysicalDevice device);

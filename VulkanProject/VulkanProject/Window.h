@@ -2,6 +2,7 @@
 #include <vulkan/vulkan.h>
 #include <vector>
 #include <GLFW/glfw3.h>
+#include "Shared.h"
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
@@ -140,7 +141,7 @@ protected:
 	void _DeInitImageViews();
 	void _CleanUpSwapChain();
 	void _RecreateSwapChain();
-
+	void _CreateAttachment(VkFormat format, VkImageUsageFlagBits usageFlags, vk::wrappers::FrameBufferAttachment* frameBufferAttachment, vk::wrappers::FrameBuffer frameBuffer);
 
 	//==Graphics Pipeline==
 	void _CreateRenderPass();
@@ -158,9 +159,6 @@ protected:
 	void _CreateDescriptorPool();
 	void _CreateDescriptorSets();
 	void _CreateDescriptorSetLayout();
-
-
-	uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 	void _CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer &buffer, VkDeviceMemory &bufferMemory);
 	void _CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
@@ -245,7 +243,7 @@ protected:
 
 	//Command pools and buffers
 	VkCommandPool _commandPool;
-	std::vector<VkCommandBuffer> _commandBuffers;
+	std::vector<VkCommandBuffer> _drawCommandBuffers;
 
 	//Semaphores
 	size_t currentFrame = 0;

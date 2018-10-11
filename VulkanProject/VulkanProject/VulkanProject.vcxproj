@@ -75,9 +75,9 @@
     <ReferencePath>C:\Users\Liam Maclean\Documents\VulkanProject\Shaders;C:\Users\Liam Maclean\Documents\VulkanProject;$(ReferencePath)</ReferencePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>C:\VulkanSDK\1.1.73.0\Include;C:\Users\Liam Maclean\Documents\VulkanProject\GLFW\include;C:\Users\Liam Maclean\Documents\VulkanProject\glm;C:\Users\Liam Maclean\Documents\VulkanProject;C:\Users\Liam Maclean\Documents\GitHub\VulkanProject\VulkanProject\TinyObjLoader;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\VulkanSDK\1.1.73.0\Lib32;C:\Users\Liam Maclean\Documents\VulkanProject\GLFW\lib-vc2015;$(LibraryPath)</LibraryPath>
-    <ReferencePath>C:\Users\Liam Maclean\Documents\VulkanProject\Shaders;C:\Users\Liam Maclean\Documents\VulkanProject;$(ReferencePath)</ReferencePath>
+    <IncludePath>M:\GitHub\VulkanProject\VulkanProject\VulkanSDK\1.1.73.0\Include;M:\GitHub\VulkanProject\VulkanProject\GLFW\include;M:\GitHub\VulkanProject\VulkanProject\glm;M:\GitHub\VulkanProject\VulkanProject;M:\GitHub\VulkanProject\VulkanProject\TinyObjLoader;$(IncludePath)</IncludePath>
+    <LibraryPath>M:\GitHub\VulkanProject\VulkanProject\VulkanSDK\1.1.73.0\Lib32;M:\GitHub\VulkanProject\VulkanProject\GLFW\lib-vc2015;$(LibraryPath)</LibraryPath>
+    <ReferencePath>M:\GitHub\VulkanProject\VulkanProject\Shaders;M:\GitHub\VulkanProject\VulkanProject;$(ReferencePath)</ReferencePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>C:\VulkanSDK\1.1.73.0\Include</IncludePath>
@@ -121,7 +121,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\Liam Maclean\Documents\VulkanProject\GLFW;C:\Users\Liam Maclean\Documents\VulkanProject;C:\Users\Liam Maclean\Documents\GitHub\VulkanProject\VulkanProject\TinyObjLoader;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>M:\GitHub\VulkanProject\VulkanProject;M:\GitHub\VulkanProject\VulkanProject\GLFW;M:\GitHub\VulkanProject\VulkanProject\TinyObjLoader;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>

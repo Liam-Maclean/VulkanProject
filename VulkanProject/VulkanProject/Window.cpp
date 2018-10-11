@@ -63,23 +63,6 @@ static void _FrameBufferResizeCallback(GLFWwindow* window, int width, int height
 	app->_frameBufferResized = true;
 }
 
-//Method to find memory type
-uint32_t VulkanWindow::FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
-{
-	VkPhysicalDeviceMemoryProperties mem_properties;
-	vkGetPhysicalDeviceMemoryProperties(_renderer->GetVulkanPhysicalDevice(), &mem_properties);
-
-	for (uint32_t i = 0; i < mem_properties.memoryTypeCount; i++)
-	{
-		if ((typeFilter & (1 << i)) && (mem_properties.memoryTypes[i].propertyFlags & properties) == properties)
-		{
-			return i;
-		}
-	}
-	throw std::runtime_error("failed to find suitable memory type!");
-
-}
-
 //Queries the swap chain support that the VKdevice can handle
 SwapChainSupportDetails VulkanWindow::_QuerySwapChainSupport(VkPhysicalDevice device)
 {
@@ -597,7 +580,7 @@ void VulkanWindow::DrawFrame()
 	submit_info.pWaitDstStageMask = waitStages;
 
 	submit_info.commandBufferCount = 1;
-	submit_info.pCommandBuffers = &_commandBuffers[imageIndex];
+	submit_info.pCommandBuffers = &_drawCommandBuffers[imageIndex];
 
 	VkSemaphore signalSemaphores[] = { _renderFinishedSemaphores[currentFrame] };
 	submit_info.signalSemaphoreCount = 1;
@@ -722,7 +705,7 @@ void VulkanWindow::_CreateImage(uint32_t width, uint32_t height, VkFormat format
 	VkMemoryAllocateInfo memory_alloc_info = {};
 	memory_alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	memory_alloc_info.allocationSize = memRequirements.size;
-	memory_alloc_info.memoryTypeIndex = FindMemoryType(memRequirements.memoryTypeBits, properties);
+	memory_alloc_info.memoryTypeIndex = _renderer->_GetMemoryType(memRequirements.memoryTypeBits, properties);
 
 	vk::tools::ErrorCheck(vkAllocateMemory(_renderer->GetVulkanDevice(), &memory_alloc_info, nullptr, &imageMemory));
 
@@ -1105,6 +1088,78 @@ void VulkanWindow::_RecreateSwapChain()
 	_CreateCommandBuffers();
 }
 
+//Creates an attachment for a framebuffer and framebuffer image view
+void VulkanWindow::_CreateAttachment(VkFormat format, VkImageUsageFlagBits usageFlags, vk::wrappers::FrameBufferAttachment * frameBufferAttachment, vk::wrappers::FrameBuffer frameBuffer)
+{
+	//Initialise local variables
+	VkImageAspectFlags aspectMask = 0;
+	VkImageLayout imageLayout;
+
+	//Set the attachment format
+	frameBufferAttachment->format = format;
+
+	//if the attachment we're using is not the depth test
+	if (usageFlags & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
+	{
+		//set the aspect mask to image color bit
+		aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	}
+	//if the attachment we're using is the depth test
+	if (usageFlags & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
+	{
+		//set the depth test mask and image stencil flags and change image layout to depth stencil optimal
+		aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+		imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+	}
+
+	//make sure the aspect mask is greater than 0 (Depth test or image color attachment flags have been met)
+	assert(aspectMask > 0);
+
+	//Set up create info for the image for the framebuffer using format, and framebuffer we have
+	VkImageCreateInfo imageCreateInfo = {};
+	imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+	imageCreateInfo.format = format;
+	imageCreateInfo.extent.width = frameBuffer.width;
+	imageCreateInfo.extent.height = frameBuffer.height;
+	imageCreateInfo.extent.depth = 1;
+	imageCreateInfo.mipLevels = 1;
+	imageCreateInfo.arrayLayers = 1;
+	imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+	imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+	imageCreateInfo.usage = usageFlags | VK_IMAGE_USAGE_SAMPLED_BIT;
+
+	//Initialise mem alloc and mem requirement variables
+	VkMemoryAllocateInfo memAlloc = {};
+	memAlloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	VkMemoryRequirements memReqs;
+
+	//Create the image for the framebuffer and check the memory requirements to bind and allocate memory for the image
+	vk::tools::ErrorCheck(vkCreateImage(_renderer->GetVulkanDevice(), &imageCreateInfo, nullptr, &frameBufferAttachment->image));
+	vkGetImageMemoryRequirements(_renderer->GetVulkanDevice(), frameBufferAttachment->image, &memReqs);
+	memAlloc.allocationSize = memReqs.size;
+	memAlloc.memoryTypeIndex = _renderer->_GetMemoryType(memReqs.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	vk::tools::ErrorCheck(vkAllocateMemory(_renderer->GetVulkanDevice(), &memAlloc, nullptr, &frameBufferAttachment->mem));
+	vk::tools::ErrorCheck(vkBindImageMemory(_renderer->GetVulkanDevice(), frameBufferAttachment->image, frameBufferAttachment->mem, 0));
+
+	//Set up image view create info to create the view for the image buffer
+	VkImageViewCreateInfo imageViewCreateInfo = {};
+	imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	imageViewCreateInfo.format = format;
+	imageViewCreateInfo.subresourceRange = {};
+	imageViewCreateInfo.subresourceRange.aspectMask = aspectMask;
+	imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
+	imageViewCreateInfo.subresourceRange.levelCount = 1;
+	imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
+	imageViewCreateInfo.subresourceRange.layerCount = 1;
+	imageViewCreateInfo.image = frameBufferAttachment->image;
+
+	//Create the image view for the frameBufferAttachment
+	vk::tools::ErrorCheck(vkCreateImageView(_renderer->GetVulkanDevice(), &imageViewCreateInfo, nullptr, &frameBufferAttachment->view));
+
+
+}
+
 //Method for creating a VkBuffer
 void VulkanWindow::_CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer & buffer, VkDeviceMemory & bufferMemory)
 {
@@ -1122,7 +1177,7 @@ void VulkanWindow::_CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, Vk
 	VkMemoryAllocateInfo memory_allocate_info = {};
 	memory_allocate_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	memory_allocate_info.allocationSize = mem_requirements.size;
-	memory_allocate_info.memoryTypeIndex = FindMemoryType(mem_requirements.memoryTypeBits, properties);
+	memory_allocate_info.memoryTypeIndex = _renderer->_GetMemoryType(mem_requirements.memoryTypeBits, properties);
 
 	vk::tools::ErrorCheck(vkAllocateMemory(_renderer->GetVulkanDevice(), &memory_allocate_info, nullptr, &bufferMemory));
 

@@ -247,7 +247,7 @@ void Renderer::_InitDevice()
 
 	_indices = _FindQueueFamilies(_gpu);
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-	std::set<int> uniqueQueueFamilies = { _indices.graphicsFamily, _indices.presentFamily};
+	std::set<int> uniqueQueueFamilies = { _indices.graphicsFamily, _indices.presentFamily };
 
 	//QUEUE DEVICE INFO FOR THE GRAPHICS FAMILY QUEUE WE ARE INTERSTED IN
 	float queue_priorities[]{ 1.0f };
@@ -282,6 +282,38 @@ void Renderer::_DeInitDevice()
 {
 	vkDestroyDevice(_device, nullptr);
 	_device = VK_NULL_HANDLE;
+}
+
+//Method to find the memory is suitable for the type of the GPU 
+uint32_t Renderer::_GetMemoryType(uint32_t memTypeBits, VkMemoryPropertyFlags propertyFlags, VkBool32 * memTypeFound)
+{
+	//for each of the memory types that the GPU has
+	for (uint32_t i = 0; i < _gpu_memory_properties.memoryTypeCount; i++)
+	{
+		//Check the memTypes has flags
+		if ((memTypeBits & 1) == 1)
+		{
+			//if the property flags are the same
+			if ((_gpu_memory_properties.memoryTypes[i].propertyFlags & propertyFlags) == propertyFlags)
+			{
+				//found the memory type
+				if (memTypeFound)
+				{
+					*memTypeFound = true;
+				}
+				return i;
+			}
+		}
+	}
+
+	if (memTypeFound)
+	{
+		*memTypeFound = false;
+	}
+	else
+	{
+		throw std::runtime_error("Could not find a matching memory type");
+	}
 }
 
 //Debug setup
