@@ -30,7 +30,7 @@
     <ClCompile Include="Window.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="VulkanApplication.cpp">
+    <ClCompile Include="VulkanDeferredApplication.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -44,10 +44,10 @@
     <ClInclude Include="Window.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="VulkanApplication.h">
+    <ClInclude Include="BaseModel.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="BaseModel.h">
+    <ClInclude Include="VulkanDeferredApplication.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

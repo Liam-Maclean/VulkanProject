@@ -236,7 +236,7 @@ VkShaderModule VulkanWindow::_CreateShaderModule(const std::vector<char>& code)
 	return shaderModule;
 }
 
-//Method for creating render passes
+//Method for creating render passes (BASE: Forward rendering standard render attachments)
 void VulkanWindow::_CreateRenderPass()
 {
 
@@ -296,7 +296,7 @@ void VulkanWindow::_CreateRenderPass()
 	vk::tools::ErrorCheck(vkCreateRenderPass(_renderer->GetVulkanDevice(), &render_pass_create_info, nullptr, &_renderPass));
 }
 
-//Method to create graphics pipeline 
+//Method to create graphics pipeline (BASE: Forward rendering standard and wireframe)
 void VulkanWindow::_CreateGraphicsPipeline()
 {
 
@@ -430,7 +430,8 @@ void VulkanWindow::_CreateGraphicsPipeline()
 	pipeline_layout_create_info.pSetLayouts = &_descriptorSetLayout;
 
 	//create and error check the pipeline layout
-	vk::tools::ErrorCheck(vkCreatePipelineLayout(_renderer->GetVulkanDevice(), &pipeline_layout_create_info, nullptr, &_pipelineLayout));
+	vk::tools::ErrorCheck(vkCreatePipelineLayout(_renderer->GetVulkanDevice(), &pipeline_layout_create_info, nullptr, &_pipelineLayout[PipelineType::standard]));
+	vk::tools::ErrorCheck(vkCreatePipelineLayout(_renderer->GetVulkanDevice(), &pipeline_layout_create_info, nullptr, &_pipelineLayout[PipelineType::wireframe]));
 
 	VkGraphicsPipelineCreateInfo pipeline_create_info = {};
 	pipeline_create_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -443,7 +444,7 @@ void VulkanWindow::_CreateGraphicsPipeline()
 	pipeline_create_info.pMultisampleState = &multisample_state_create_info;
 	pipeline_create_info.pDepthStencilState = &depth_stencil_info;
 	pipeline_create_info.pColorBlendState = &color_blend_state_create_info;
-	pipeline_create_info.layout = _pipelineLayout;
+	pipeline_create_info.layout = _pipelineLayout[PipelineType::standard];
 	pipeline_create_info.renderPass = _renderPass;
 	pipeline_create_info.subpass = 0;
 	pipeline_create_info.basePipelineHandle = VK_NULL_HANDLE;
@@ -469,7 +470,7 @@ void VulkanWindow::_CreateGraphicsPipeline()
 	pipeline_create_info.pMultisampleState = &multisample_state_create_info;
 	pipeline_create_info.pDepthStencilState = &depth_stencil_info;
 	pipeline_create_info.pColorBlendState = &color_blend_state_create_info;
-	pipeline_create_info.layout = _pipelineLayout;
+	pipeline_create_info.layout = _pipelineLayout[PipelineType::wireframe];
 	pipeline_create_info.renderPass = _renderPass;
 	pipeline_create_info.subpass = 0;
 	pipeline_create_info.basePipelineHandle = VK_NULL_HANDLE;
@@ -495,36 +496,6 @@ void VulkanWindow::_CreateCommandPool()
 //Method for creating command buffers from pools
 void VulkanWindow::_CreateCommandBuffers()
 {
-}
-
-//Method for Creating the descriptor set layout
-void VulkanWindow::_CreateDescriptorSetLayout()
-{
-
-	//UBO layout binding
-	VkDescriptorSetLayoutBinding ubo_layout_binding = {};
-	ubo_layout_binding.binding = 0;
-	ubo_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	ubo_layout_binding.descriptorCount = 1;
-	ubo_layout_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-	ubo_layout_binding.pImmutableSamplers = nullptr;
-
-	//Texture Sampler layout binding
-	VkDescriptorSetLayoutBinding sampler_layout_binding = {};
-	sampler_layout_binding.binding = 1;
-	sampler_layout_binding.descriptorCount = 1;
-	sampler_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	sampler_layout_binding.pImmutableSamplers = nullptr;
-	sampler_layout_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-	//Store bindings and hand them to the descriptor set layout
-	std::array<VkDescriptorSetLayoutBinding, 2> bindings = { ubo_layout_binding, sampler_layout_binding };
-	VkDescriptorSetLayoutCreateInfo layout_info = { };
-	layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-	layout_info.bindingCount = static_cast<uint32_t>(bindings.size());
-	layout_info.pBindings = bindings.data();
-
-	vk::tools::ErrorCheck(vkCreateDescriptorSetLayout(_renderer->GetVulkanDevice(), &layout_info, nullptr, &_descriptorSetLayout));
 }
 
 //Method for creating semaphores
@@ -1281,6 +1252,36 @@ void VulkanWindow::_CreateDescriptorSets()
 
 }
 
+//Method for Creating the descriptor set layout (BASE : Forward Rendering Descriptor for shader)
+void VulkanWindow::_CreateDescriptorSetLayout()
+{
+
+	//UBO layout binding
+	VkDescriptorSetLayoutBinding ubo_layout_binding = {};
+	ubo_layout_binding.binding = 0;
+	ubo_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	ubo_layout_binding.descriptorCount = 1;
+	ubo_layout_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	ubo_layout_binding.pImmutableSamplers = nullptr;
+
+	//Texture Sampler layout binding
+	VkDescriptorSetLayoutBinding sampler_layout_binding = {};
+	sampler_layout_binding.binding = 1;
+	sampler_layout_binding.descriptorCount = 1;
+	sampler_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	sampler_layout_binding.pImmutableSamplers = nullptr;
+	sampler_layout_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+	//Store bindings and hand them to the descriptor set layout
+	std::array<VkDescriptorSetLayoutBinding, 2> bindings = { ubo_layout_binding, sampler_layout_binding };
+	VkDescriptorSetLayoutCreateInfo layout_info = {};
+	layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	layout_info.bindingCount = static_cast<uint32_t>(bindings.size());
+	layout_info.pBindings = bindings.data();
+
+	vk::tools::ErrorCheck(vkCreateDescriptorSetLayout(_renderer->GetVulkanDevice(), &layout_info, nullptr, &_descriptorSetLayout));
+}
+
 //Method to update the data in the uniform buffer
 void VulkanWindow::_UpdateUniformBuffer(uint32_t imageIndex)
 {
@@ -1355,7 +1356,10 @@ void VulkanWindow::_DeInitRenderPass()
 //Method to destroy pipeline layout
 void VulkanWindow::_DeInitPipelineLayout()
 {
-	vkDestroyPipelineLayout(_renderer->GetVulkanDevice(), _pipelineLayout, nullptr);
+	for (auto i : _pipelineLayout)
+	{
+		vkDestroyPipelineLayout(_renderer->GetVulkanDevice(), i.second, nullptr);
+	}
 }
 
 //Method to destroy graphics pipeline

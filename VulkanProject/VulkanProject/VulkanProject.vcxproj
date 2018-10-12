@@ -152,14 +152,14 @@
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="Shared.cpp" />
     <ClCompile Include="Source.cpp" />
-    <ClCompile Include="VulkanApplication.cpp" />
+    <ClCompile Include="VulkanDeferredApplication.cpp" />
     <ClCompile Include="Window.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BaseModel.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="Shared.h" />
-    <ClInclude Include="VulkanApplication.h" />
+    <ClInclude Include="VulkanDeferredApplication.h" />
     <ClInclude Include="Window.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

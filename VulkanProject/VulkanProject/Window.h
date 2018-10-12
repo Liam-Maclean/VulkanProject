@@ -109,6 +109,8 @@ enum PipelineType
 {
 	standard,
 	wireframe,
+	offscreen,
+	deferred,
 	cellShaded,
 	PBR
 };
@@ -144,8 +146,8 @@ protected:
 	void _CreateAttachment(VkFormat format, VkImageUsageFlagBits usageFlags, vk::wrappers::FrameBufferAttachment* frameBufferAttachment, vk::wrappers::FrameBuffer frameBuffer);
 
 	//==Graphics Pipeline==
-	void _CreateRenderPass();
-	void _CreateGraphicsPipeline();
+	virtual void _CreateRenderPass();
+	virtual void _CreateGraphicsPipeline();
 	void _DeInitRenderPass();
 	void _DeInitPipelineLayout();
 	void _DeInitGraphicsPipeline();
@@ -157,8 +159,8 @@ protected:
 
 	//Shader Buffers
 	void _CreateDescriptorPool();
-	void _CreateDescriptorSets();
-	void _CreateDescriptorSetLayout();
+	virtual void _CreateDescriptorSets();
+	virtual void _CreateDescriptorSetLayout();
 	void _CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer &buffer, VkDeviceMemory &bufferMemory);
 	void _CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
@@ -226,10 +228,11 @@ protected:
 	
 	//Graphics Pipeline
 	std::map<PipelineType, VkPipeline> graphicsPipelines;
+	std::map<PipelineType, VkPipelineLayout> _pipelineLayout;
 	VkPipeline _graphicsPipeline;
 	VkRenderPass _renderPass;
 	VkDescriptorSetLayout _descriptorSetLayout;
-	VkPipelineLayout _pipelineLayout;
+	
 
 	//vertex and index buffers
 	VkBuffer _vertexBuffer;
