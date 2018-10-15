@@ -44,8 +44,74 @@ void VulkanDeferredApplication::_CreateGraphicsPipeline()
 	//base forward rendering pipeline creation
 	VulkanWindow::_CreateGraphicsPipeline();
 
+	VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo = {};
+	inputAssemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+	inputAssemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	inputAssemblyInfo.flags = 0;
+	inputAssemblyInfo.primitiveRestartEnable = VK_FALSE;
+
+	VkPipelineRasterizationStateCreateInfo rasterizerCreateInfo = {};
+	rasterizerCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+	rasterizerCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
+	rasterizerCreateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
+	rasterizerCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
+
+	VkPipelineColorBlendAttachmentState colorBlendState = {};
+	colorBlendState.colorWriteMask = 0xf;
+	colorBlendState.blendEnable = VK_FALSE;
+
+	VkPipelineColorBlendStateCreateInfo blendStateInfo = {};
+	blendStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+	blendStateInfo.attachmentCount = 1;
+	blendStateInfo.pAttachments = &colorBlendState;
+
+	VkPipelineDepthStencilStateCreateInfo depthStencilState = {};
+	depthStencilState.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+	depthStencilState.stencilTestEnable = VK_TRUE;
+	depthStencilState.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+
+	VkPipelineViewportStateCreateInfo viewportStateInfo = {};
+	viewportStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+	
+	VkPipelineMultisampleStateCreateInfo multisampleStateInfo = {};
+	multisampleStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+	multisampleStateInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+
+	std::vector<VkDynamicState> dynamicStateEnables = {
+		VK_DYNAMIC_STATE_VIEWPORT,
+		VK_DYNAMIC_STATE_SCISSOR
+	};
+
+	VkPipelineDynamicStateCreateInfo dynamicStateInfo = {};
+	dynamicStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+	dynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(dynamicStateEnables.size());
+	dynamicStateInfo.pDynamicStates = dynamicStateEnables.data();
+	dynamicStateInfo.flags = 0;
+
+
+	std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages;
+
+	VkGraphicsPipelineCreateInfo pipelineCreateInfo = {};
+	pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	pipelineCreateInfo.layout = _pipelineLayout[PipelineType::deferred];
+	pipelineCreateInfo.renderPass = _renderPass;
+	pipelineCreateInfo.pInputAssemblyState = &inputAssemblyInfo;
+	pipelineCreateInfo.pRasterizationState = &rasterizerCreateInfo;
+	pipelineCreateInfo.pColorBlendState = &blendStateInfo;
+	pipelineCreateInfo.pMultisampleState = &multisampleStateInfo;
+	pipelineCreateInfo.pViewportState = &viewportStateInfo;
+	pipelineCreateInfo.pDepthStencilState = &depthStencilState;
+	pipelineCreateInfo.pDynamicState = &dynamicStateInfo;
+	pipelineCreateInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
+	pipelineCreateInfo.pStages = shaderStages.data();
+
+	//Final Pipeline (after offscreen pass)
+
+	//Offscreen pass pipeline (before drawing)
+	//vk::tools::ReadShaderFile()
 
 }
+
 
 void VulkanDeferredApplication::_CreateRenderPass()
 {
@@ -273,11 +339,14 @@ void VulkanDeferredApplication::CreateDeferredCommandBuffers()
 		command_buffer_allocate_info.commandBufferCount = 1;
 	}
 
+	//Set up semaphore create info
 	VkSemaphoreCreateInfo semaphoreCreateInfo = {};
 	semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
+	//Create a signal semaphore for when the off screen rendering is complete (For pipeline ordering)
 	vk::tools::ErrorCheck(vkCreateSemaphore(_renderer->GetVulkanDevice(), &semaphoreCreateInfo, nullptr, &offScreenSemaphore));
 
+	//set up cmd buffer begin info
 	VkCommandBufferBeginInfo cmdBufferBeginInfo = {};
 	cmdBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
@@ -288,6 +357,7 @@ void VulkanDeferredApplication::CreateDeferredCommandBuffers()
 	clearValues[2].color = { { 0.0f,0.0f,0.0f,0.0f } };
 	clearValues[3].depthStencil = { 1.0f, 0};
 
+	//begin to set up the information for the render pass
 	VkRenderPassBeginInfo renderPassBeginInfo = {};
 	renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	renderPassBeginInfo.framebuffer = deferredOffScreenFrameBuffer.frameBuffer;
@@ -296,6 +366,20 @@ void VulkanDeferredApplication::CreateDeferredCommandBuffers()
 	renderPassBeginInfo.renderArea.extent.height = deferredOffScreenFrameBuffer.height;
 	renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
 	renderPassBeginInfo.pClearValues = clearValues.data();
+
+
+	//begin command buffer and start the render pass
+	vk::tools::ErrorCheck(vkBeginCommandBuffer(offScreenCmdBuffer, &cmdBufferBeginInfo));
+	vkCmdBeginRenderPass(offScreenCmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+	//bind the offscreen graphics pipeline for deferred rendering
+	vkCmdBindPipeline(offScreenCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelines[PipelineType::offscreen]);
+
+	//End the render pass
+	vkCmdEndRenderPass(offScreenCmdBuffer);
+
+	//End the command buffer drawing
+	vk::tools::ErrorCheck(vkEndCommandBuffer(offScreenCmdBuffer));
 
 }
 
