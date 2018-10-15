@@ -51,6 +51,7 @@ public:
 
 	Mesh triangleMesh;
 
+	VkSemaphore offScreenSemaphore;
 	VkCommandBuffer offScreenCmdBuffer;
 
 	directionalLight dLight;

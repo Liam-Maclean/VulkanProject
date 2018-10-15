@@ -272,6 +272,31 @@ void VulkanDeferredApplication::CreateDeferredCommandBuffers()
 		command_buffer_allocate_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 		command_buffer_allocate_info.commandBufferCount = 1;
 	}
+
+	VkSemaphoreCreateInfo semaphoreCreateInfo = {};
+	semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+	vk::tools::ErrorCheck(vkCreateSemaphore(_renderer->GetVulkanDevice(), &semaphoreCreateInfo, nullptr, &offScreenSemaphore));
+
+	VkCommandBufferBeginInfo cmdBufferBeginInfo = {};
+	cmdBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+	//Clear values for attachments in fragment shader
+	std::array<VkClearValue, 4> clearValues;
+	clearValues[0].color = { {0.0f,0.0f,0.0f,0.0f} };
+	clearValues[1].color = { { 0.0f,0.0f,0.0f,0.0f } };
+	clearValues[2].color = { { 0.0f,0.0f,0.0f,0.0f } };
+	clearValues[3].depthStencil = { 1.0f, 0};
+
+	VkRenderPassBeginInfo renderPassBeginInfo = {};
+	renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+	renderPassBeginInfo.framebuffer = deferredOffScreenFrameBuffer.frameBuffer;
+	renderPassBeginInfo.renderPass = deferredOffScreenFrameBuffer.renderPass;
+	renderPassBeginInfo.renderArea.extent.width = deferredOffScreenFrameBuffer.width;
+	renderPassBeginInfo.renderArea.extent.height = deferredOffScreenFrameBuffer.height;
+	renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+	renderPassBeginInfo.pClearValues = clearValues.data();
+
 }
 
 void VulkanDeferredApplication::_CreateDescriptorSetLayout()
