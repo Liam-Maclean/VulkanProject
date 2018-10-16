@@ -36,6 +36,8 @@ public:
 	void _CreateGraphicsPipeline() override;
 	void _CreateRenderPass() override;
 	void _CreateCommandBuffers() override;
+	void _CreateDescriptorPool() override;
+	void _CreateDescriptorSets() override;
 	void _CreateDescriptorSetLayout() override;
 	void _CreateVertexBuffer(VkDevice device, const std::vector<Vertex> vertices, VkBuffer* vertexBuffer, VkDeviceMemory* vertexBufferMemory);
 	void _CreateVertexBuffer(VkDevice device, directionalLight lightData, VkBuffer* lightBuffer, VkDeviceMemory* lightBufferMemory);
@@ -44,7 +46,7 @@ public:
 	void CreateDeferredCommandBuffers();
 
 	VkDescriptorSetLayout descriptorSetLayout;
-
+	VkDescriptorSet descriptorSet;
 
 	vk::wrappers::FrameBuffer deferredOffScreenFrameBuffer;
 	VkSampler colorSampler;

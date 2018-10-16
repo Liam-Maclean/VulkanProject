@@ -1227,7 +1227,6 @@ void VulkanWindow::_CreateDescriptorSets()
 		image_info.imageView = _textureImageView;
 		image_info.sampler = _textureSampler;
 
-
 		std::array<VkWriteDescriptorSet, 2> descriptor_writes = {};
 		descriptor_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		descriptor_writes[0].dstSet = _descriptorSets[i];

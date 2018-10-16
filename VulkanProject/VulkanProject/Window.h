@@ -158,7 +158,7 @@ protected:
 	void _DeInitCommandPool();
 
 	//Shader Buffers
-	void _CreateDescriptorPool();
+	virtual void _CreateDescriptorPool();
 	virtual void _CreateDescriptorSets();
 	virtual void _CreateDescriptorSetLayout();
 	void _CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer &buffer, VkDeviceMemory &bufferMemory);
