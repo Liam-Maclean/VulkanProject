@@ -16,6 +16,7 @@ namespace vk
 		{
 			VkBuffer buffer;
 			VkDeviceMemory memory;
+			VkDescriptorBufferInfo descriptor;
 		};
 
 		//FrameBuffer attachment Wrapper
@@ -26,7 +27,7 @@ namespace vk
 			VkImageView view;
 			VkFormat format;
 		};
-
+		 
 		//FrameBuffer Wrapper
 		struct FrameBuffer
 		{

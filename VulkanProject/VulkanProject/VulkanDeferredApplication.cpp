@@ -16,7 +16,6 @@ void VulkanDeferredApplication::InitialiseVulkanApplication()
 	_CreateTextureSampler();
 	//triangleMesh.LoadMeshFromFile("C:/Users/Liam Maclean/Documents/GitHub/VulkanProject/VulkanProject/VulkanProject/Textures/Avent.obj");
 	CreateObjectBuffers();
-	_CreateUniformBuffer();
 	_CreateDescriptorPool();
 	_CreateDescriptorSets();
 	_CreateCommandBuffers();
@@ -37,6 +36,12 @@ VulkanDeferredApplication::~VulkanDeferredApplication()
 void VulkanDeferredApplication::Update()
 {
 	VulkanWindow::Update();
+}
+
+void VulkanDeferredApplication::DrawFrame()
+{
+
+
 }
 
 //Creates the graphics pipelines for the deferred renderer (offscreen and fullscreen pipelines)
@@ -186,7 +191,7 @@ void VulkanDeferredApplication::_CreateGraphicsPipeline()
 
 }
 
-
+//Creates a render pass
 void VulkanDeferredApplication::_CreateRenderPass()
 {
 	//Base forward rendering render pass creation
@@ -209,6 +214,50 @@ void VulkanDeferredApplication::_CreateVertexBuffer(VkDevice device, const std::
 	vkUnmapMemory(_renderer->GetVulkanDevice(), stagingBufferMemory);
 
 	_CreateBuffer(bufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, *vertexBuffer, *vertexBufferMemory);
+	_CopyBuffer(stagingBuffer, *vertexBuffer, bufferSize);
+
+	vkDestroyBuffer(_renderer->GetVulkanDevice(), stagingBuffer, nullptr);
+	vkFreeMemory(_renderer->GetVulkanDevice(), stagingBufferMemory, nullptr);
+}
+
+//Method for creating uniform vertex Buffer
+//*Performs the staging buffer process to conver to GPU memory
+void VulkanDeferredApplication::_CreateUniformBuffer(VkDevice device, uboVS uboVertexData, VkBuffer * vertexBuffer, VkDeviceMemory * vertexBufferMemory)
+{
+	VkDeviceSize bufferSize = sizeof(uboVS);
+
+	VkBuffer stagingBuffer;
+	VkDeviceMemory stagingBufferMemory;
+	_CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+	void* data;
+	vkMapMemory(_renderer->GetVulkanDevice(), stagingBufferMemory, 0, bufferSize, 0, &data);
+	memcpy(data, &uboVertexData, (size_t)bufferSize);
+	vkUnmapMemory(_renderer->GetVulkanDevice(), stagingBufferMemory);
+
+	_CreateBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, *vertexBuffer, *vertexBufferMemory);
+	_CopyBuffer(stagingBuffer, *vertexBuffer, bufferSize);
+
+	vkDestroyBuffer(_renderer->GetVulkanDevice(), stagingBuffer, nullptr);
+	vkFreeMemory(_renderer->GetVulkanDevice(), stagingBufferMemory, nullptr);
+}
+
+//Method for creating uniform vertex Buffer
+//*Performs the staging buffer process to conver to GPU memory
+void VulkanDeferredApplication::_CreateUniformBuffer(VkDevice device, uboFragmentLights uboLightData, VkBuffer * vertexBuffer, VkDeviceMemory * vertexBufferMemory)
+{
+	VkDeviceSize bufferSize = sizeof(uboLightData);
+
+	VkBuffer stagingBuffer;
+	VkDeviceMemory stagingBufferMemory;
+	_CreateBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+	void* data;
+	vkMapMemory(_renderer->GetVulkanDevice(), stagingBufferMemory, 0, bufferSize, 0, &data);
+	memcpy(data, &uboLightData, (size_t)bufferSize);
+	vkUnmapMemory(_renderer->GetVulkanDevice(), stagingBufferMemory);
+
+	_CreateBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, *vertexBuffer, *vertexBufferMemory);
 	_CopyBuffer(stagingBuffer, *vertexBuffer, bufferSize);
 
 	vkDestroyBuffer(_renderer->GetVulkanDevice(), stagingBuffer, nullptr);
@@ -260,6 +309,87 @@ void VulkanDeferredApplication::_CreateIndexBuffer(VkDevice device, const std::v
 	vkFreeMemory(_renderer->GetVulkanDevice(), stagingBufferMemory, nullptr);
 }
 
+//Sets up uniform buffers to be passed to the shaders
+void VulkanDeferredApplication::SetUpUniformBuffers()
+{
+	//Vertex UBO
+	VulkanDeferredApplication::_CreateUniformBuffer(_renderer->GetVulkanDevice(), offScreenUniformVSData, &offScreenVertexUBOBuffer.buffer, &offScreenVertexUBOBuffer.memory);
+	VulkanDeferredApplication::_CreateUniformBuffer(_renderer->GetVulkanDevice(), fullScreenUniformVSData, &fullScreenVertexUBOBuffer.buffer, &fullScreenVertexUBOBuffer.memory);
+
+	//Lights UBO
+	VulkanDeferredApplication::_CreateUniformBuffer(_renderer->GetVulkanDevice(), lights, &lightUBOBuffer.buffer, &lightUBOBuffer.memory);
+
+
+	// Init some values
+	offScreenUniformVSData.instancePos[0] = glm::vec4(0.0f);
+	offScreenUniformVSData.instancePos[1] = glm::vec4(-4.0f, 0.0, -4.0f, 0.0f);
+	offScreenUniformVSData.instancePos[2] = glm::vec4(4.0f, 0.0, -4.0f, 0.0f);
+
+	fullScreenUniformVSData.projection = glm::ortho(0.0f, 1.0f, 0.0f, 1.0f, -1.0f, 1.0f);
+	fullScreenUniformVSData.model = glm::mat4(1.0f);
+
+	offScreenUniformVSData.model = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+	offScreenUniformVSData.view = glm::lookAt(glm::vec3(2.0f, 6.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	offScreenUniformVSData.projection = glm::perspective(glm::radians(45.0f), _swapChainExtent.width / (float)_swapChainExtent.height, 0.1f, 20.0f);
+
+	// White
+	lights.lights[0].position = glm::vec4(0.0f, 0.0f, 1.0f, 0.0f);
+	lights.lights[0].color = glm::vec3(1.5f);
+	lights.lights[0].radius = 15.0f * 0.25f;
+	// Red
+	lights.lights[1].position = glm::vec4(-2.0f, 0.0f, 0.0f, 0.0f);
+	lights.lights[1].color = glm::vec3(1.0f, 0.0f, 0.0f);
+	lights.lights[1].radius = 15.0f;
+	// Blue
+	lights.lights[2].position = glm::vec4(2.0f, 1.0f, 0.0f, 0.0f);
+	lights.lights[2].color = glm::vec3(0.0f, 0.0f, 2.5f);
+	lights.lights[2].radius = 5.0f;
+	// Yellow
+	lights.lights[3].position = glm::vec4(0.0f, 0.9f, 0.5f, 0.0f);
+	lights.lights[3].color = glm::vec3(1.0f, 1.0f, 0.0f);
+	lights.lights[3].radius = 2.0f;
+	// Green
+	lights.lights[4].position = glm::vec4(0.0f, 0.5f, 0.0f, 0.0f);
+	lights.lights[4].color = glm::vec3(0.0f, 1.0f, 0.2f);
+	lights.lights[4].radius = 5.0f;
+	// Yellow
+	lights.lights[5].position = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
+	lights.lights[5].color = glm::vec3(1.0f, 0.7f, 0.3f);
+	lights.lights[5].radius = 25.0f;
+
+	lights.lights[0].position.x = sin(glm::radians(360.0f)) * 5.0f;
+	lights.lights[0].position.z = cos(glm::radians(360.0f)) * 5.0f;
+
+	lights.lights[1].position.x = -4.0f + sin(glm::radians(360.0f) + 45.0f) * 2.0f;
+	lights.lights[1].position.z = 0.0f + cos(glm::radians(360.0f) + 45.0f) * 2.0f;
+
+	lights.lights[2].position.x = 4.0f + sin(glm::radians(360.0f)) * 2.0f;
+	lights.lights[2].position.z = 0.0f + cos(glm::radians(360.0f)) * 2.0f;
+
+	lights.lights[4].position.x = 0.0f + sin(glm::radians(360.0f + 90.0f)) * 5.0f;
+	lights.lights[4].position.z = 0.0f - cos(glm::radians(360.0f + 45.0f)) * 5.0f;
+
+	lights.lights[5].position.x = 0.0f + sin(glm::radians(-360.0f + 135.0f)) * 10.0f;
+	lights.lights[5].position.z = 0.0f - cos(glm::radians(-360.0f - 45.0f)) * 10.0f;
+
+	// Current view position
+	lights.viewPos = glm::vec4(-1.0f, 1.0f, -1.0f, 1.0f);
+
+	void* data;
+	vkMapMemory(_renderer->GetVulkanDevice(), offScreenVertexUBOBuffer.memory, 0, sizeof(uboVS), 0, &data);
+	memcpy(data, &offScreenUniformVSData, sizeof(uboVS));
+	vkUnmapMemory(_renderer->GetVulkanDevice(), offScreenVertexUBOBuffer.memory);
+
+	void* data;
+	vkMapMemory(_renderer->GetVulkanDevice(), fullScreenVertexUBOBuffer.memory, 0, sizeof(uboVS), 0, &data);
+	memcpy(data, &fullScreenUniformVSData, sizeof(uboVS));
+	vkUnmapMemory(_renderer->GetVulkanDevice(), fullScreenVertexUBOBuffer.memory);
+
+	void* data;
+	vkMapMemory(_renderer->GetVulkanDevice(), lightUBOBuffer.memory, 0, sizeof(uboFragmentLights), 0, &data);
+	memcpy(data, &lights, sizeof(uboFragmentLights));
+	vkUnmapMemory(_renderer->GetVulkanDevice(), lightUBOBuffer.memory);
+}
 
 //Creates the offscreen framebuffer and attachments for the G-Buffer
 void VulkanDeferredApplication::CreateGBuffer()
@@ -469,13 +599,6 @@ void VulkanDeferredApplication::_CreateDescriptorSets()
 
 	vk::tools::ErrorCheck(vkAllocateDescriptorSets(_renderer->GetVulkanDevice(), &descSetAllocInfo, &descriptorSet));
 
-
-	VkDescriptorBufferInfo buffer_info = {};
-	buffer_info.buffer = _uniformBuffers;
-	buffer_info.offset = 0;
-	buffer_info.range = sizeof(UniformBufferObject);
-
-
 	//Image descriptors for offscreen color attachments
 	VkDescriptorImageInfo texDescriptorPosition = {};
 	texDescriptorPosition.sampler = colorSampler;
@@ -497,13 +620,12 @@ void VulkanDeferredApplication::_CreateDescriptorSets()
 	//Binding 0: Vertex Shader UBO
 	VkWriteDescriptorSet uboWriteSet = {};
 	uboWriteSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	uboWriteSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	uboWriteSet.dstSet = _descriptorSets[i];
+	uboWriteSet.dstSet =  descriptorSet;
 	uboWriteSet.dstBinding = 0;
 	uboWriteSet.dstArrayElement = 0;
 	uboWriteSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	uboWriteSet.descriptorCount = 1;
-	uboWriteSet.pBufferInfo = &buffer_info;
+	uboWriteSet.pBufferInfo = &fullScreenVertexUBOBuffer.descriptor;
 
 	//Binding 1: Position texture for offscreen rendering
 	VkWriteDescriptorSet positionShaderWriteSet = {};
@@ -531,9 +653,19 @@ void VulkanDeferredApplication::_CreateDescriptorSets()
 	albedoShaderWriteSet.dstBinding = 3;
 	albedoShaderWriteSet.pImageInfo = &texDescriptorAlbedo;
 	albedoShaderWriteSet.descriptorCount = 1;
-	writeDescriptorSets = { positionShaderWriteSet, normalShaderWriteSet, albedoShaderWriteSet };
 	
 	//Binding 4: Lighting shader uniform buffer
+	//Binding 3: albedo texture for offscreen rendering
+	VkWriteDescriptorSet fragmentShaderUBOWriteSet = {};
+	fragmentShaderUBOWriteSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	fragmentShaderUBOWriteSet.dstSet = descriptorSet;
+	fragmentShaderUBOWriteSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	fragmentShaderUBOWriteSet.dstBinding = 4;
+	fragmentShaderUBOWriteSet.pBufferInfo = &lightUBOBuffer.descriptor;
+	fragmentShaderUBOWriteSet.descriptorCount = 1;
+
+
+	writeDescriptorSets = { positionShaderWriteSet, normalShaderWriteSet, albedoShaderWriteSet, fragmentShaderUBOWriteSet };
 
 
 	//Update the descriptor sets
@@ -608,6 +740,8 @@ void VulkanDeferredApplication::CreateObjectBuffers()
 {
 	VulkanDeferredApplication::_CreateVertexBuffer(_renderer->GetVulkanDevice(), triangleMesh.vertices, &triangleMesh.vertexBuffer.buffer, &triangleMesh.vertexBuffer.memory);
 	VulkanDeferredApplication::_CreateIndexBuffer(_renderer->GetVulkanDevice(), triangleMesh.indices, &triangleMesh.indicesBuffer.buffer, &triangleMesh.indicesBuffer.memory);
+
+
 }
 
 void VulkanDeferredApplication::SceneSetup()

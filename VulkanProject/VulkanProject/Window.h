@@ -167,7 +167,7 @@ protected:
 	//Semaphores
 	void _CreateSemaphores();
 	void _DeInitSemaphores();
-	void DrawFrame();
+	virtual void DrawFrame();
 
 	//Textures
 	void _CreateTextureImage();
