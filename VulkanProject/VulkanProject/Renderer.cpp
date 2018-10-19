@@ -304,6 +304,7 @@ uint32_t Renderer::_GetMemoryType(uint32_t memTypeBits, VkMemoryPropertyFlags pr
 				return i;
 			}
 		}
+		memTypeBits >>= 1;
 	}
 
 	if (memTypeFound)

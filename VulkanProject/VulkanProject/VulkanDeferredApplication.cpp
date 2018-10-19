@@ -5,20 +5,21 @@ void VulkanDeferredApplication::InitialiseVulkanApplication()
 	_InitSurface();
 	_CreateSwapChain();
 	_CreateImageViews();
-	_CreateRenderPass();
-	_CreateDescriptorSetLayout();
-	_CreateGraphicsPipeline();
-	_CreateCommandPool();
+	VulkanDeferredApplication::_CreateRenderPass();
+	VulkanDeferredApplication::_CreateDescriptorSetLayout();
+	VulkanDeferredApplication::CreateGBuffer();
+	VulkanDeferredApplication::_CreateGraphicsPipeline();
+	VulkanDeferredApplication::_CreateCommandPool();
 	_CreateDepthResources();
 	_CreateFramebuffers();
 	_CreateTextureImage();
 	_CreateTextureImageView();
 	_CreateTextureSampler();
 	//triangleMesh.LoadMeshFromFile("C:/Users/Liam Maclean/Documents/GitHub/VulkanProject/VulkanProject/VulkanProject/Textures/Avent.obj");
-	CreateObjectBuffers();
-	_CreateDescriptorPool();
-	_CreateDescriptorSets();
-	_CreateCommandBuffers();
+	VulkanDeferredApplication::_CreateDescriptorPool();
+	VulkanDeferredApplication::_CreateDescriptorSets();
+	VulkanDeferredApplication::_CreateCommandBuffers();
+	VulkanDeferredApplication::CreateDeferredCommandBuffers();
 	_CreateSemaphores();
 	Update();
 }
@@ -33,22 +34,105 @@ VulkanDeferredApplication::~VulkanDeferredApplication()
 	vkFreeMemory(_renderer->GetVulkanDevice(), triangleMesh.indicesBuffer.memory, nullptr);
 }
 
+//Update
 void VulkanDeferredApplication::Update()
 {
 	VulkanWindow::Update();
 }
 
+//Draw frame
 void VulkanDeferredApplication::DrawFrame()
 {
+	vkWaitForFences(_renderer->GetVulkanDevice(), 1, &_inFlightFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
+	uint32_t imageIndex;
+	VkResult result = vkAcquireNextImageKHR(_renderer->GetVulkanDevice(), _swapChain, std::numeric_limits<uint64_t>::max(),
+		_imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
+
+	if (result == VK_ERROR_OUT_OF_DATE_KHR)
+	{
+		_RecreateSwapChain();
+		return;
+	}
+	else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+	{
+		throw std::runtime_error("Failed to acquire swap chain image!");
+	}
+
+	_UpdateUniformBuffer(imageIndex);
+
+	VkSubmitInfo submit_info = {};
+	submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+	VkSemaphore waitSemaphores[] = { _imageAvailableSemaphores[currentFrame] };
+	VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+	submit_info.waitSemaphoreCount = 1;
+	submit_info.pWaitSemaphores = waitSemaphores;
+	submit_info.pWaitDstStageMask = waitStages;
+
+	submit_info.commandBufferCount = 1;
+	submit_info.pCommandBuffers = &_drawCommandBuffers[imageIndex];
+
+	VkSemaphore signalSemaphores[] = { _renderFinishedSemaphores[currentFrame] };
+	submit_info.signalSemaphoreCount = 1;
+	submit_info.pSignalSemaphores = signalSemaphores;
+	//
+	vkResetFences(_renderer->GetVulkanDevice(), 1, &_inFlightFences[currentFrame]);
+	vk::tools::ErrorCheck(vkQueueSubmit(_renderer->GetVulkanGraphicsQueue(), 1, &submit_info, _inFlightFences[currentFrame]));
 
 
+	// Wait for swap chain presentation to finish
+	submit_info.pWaitSemaphores = waitSemaphores;
+	// Signal ready with offscreen semaphore
+	submit_info.pSignalSemaphores = &offScreenSemaphore;
+
+	// Submit work
+	submit_info.commandBufferCount = 1;
+	submit_info.pCommandBuffers = &offScreenCmdBuffer;
+	vk::tools::ErrorCheck(vkQueueSubmit(_renderer->GetVulkanGraphicsQueue(), 1, &submit_info, VK_NULL_HANDLE));
+
+	// Scene rendering
+
+	// Wait for offscreen semaphore
+	submit_info.pWaitSemaphores = &offScreenSemaphore;
+	// Signal ready with render complete semaphpre
+	submit_info.pSignalSemaphores = signalSemaphores;
+
+	// Submit work
+	submit_info.pCommandBuffers = &_drawCommandBuffers[imageIndex];
+	vk::tools::ErrorCheck(vkQueueSubmit(_renderer->GetVulkanGraphicsQueue(), 1, &submit_info, VK_NULL_HANDLE));
+
+
+	VkPresentInfoKHR present_info = {};
+	present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+	present_info.waitSemaphoreCount = 1;
+	present_info.pWaitSemaphores = signalSemaphores;
+
+	VkSwapchainKHR swapChains[] = { _swapChain };
+	present_info.swapchainCount = 1;
+	present_info.pSwapchains = swapChains;
+	present_info.pImageIndices = &imageIndex;
+
+	result = vkQueuePresentKHR(_renderer->GetVulkanPresentQueue(), &present_info);
+	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || _frameBufferResized)
+	{
+		_frameBufferResized = false;
+		_RecreateSwapChain();
+	}
+	else if (result != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to present swap chain image");
+	}
+
+	currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+
+	//vkQueueWaitIdle(_renderer->GetVulkanPresentQueue());
 }
 
 //Creates the graphics pipelines for the deferred renderer (offscreen and fullscreen pipelines)
 void VulkanDeferredApplication::_CreateGraphicsPipeline()
 {
 	//base forward rendering pipeline creation
-	VulkanWindow::_CreateGraphicsPipeline();
+	//VulkanWindow::_CreateGraphicsPipeline();
 
 	VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo = {};
 	inputAssemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -109,18 +193,20 @@ void VulkanDeferredApplication::_CreateGraphicsPipeline()
 	pipelineCreateInfo.pDynamicState = &dynamicStateInfo;
 	pipelineCreateInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
 	pipelineCreateInfo.pStages = shaderStages.data();
+	pipelineCreateInfo.subpass = 0;
+	pipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
 
 	//Final Pipeline (after offscreen pass)
 
 	//Shader loading (Loads shader modules for pipeline)
 	auto deferredVert = vk::tools::ReadShaderFile("M:/GitHub/VulkanProject/VulkanProject/Shaders/deferred.vert.spv");
 	auto deferredFrag = vk::tools::ReadShaderFile("M:/GitHub/VulkanProject/VulkanProject/Shaders/deferred.frag.spv");
-	auto deferredVert = vk::tools::ReadShaderFile("M:/GitHub/VulkanProject/VulkanProject/Shaders/mrt.vert.spv");
-	auto deferredFrag = vk::tools::ReadShaderFile("M:/GitHub/VulkanProject/VulkanProject/Shaders/mrt.frag.spv");
+	auto offScreenVert = vk::tools::ReadShaderFile("M:/GitHub/VulkanProject/VulkanProject/Shaders/mrt.vert.spv");
+	auto offScreenFrag = vk::tools::ReadShaderFile("M:/GitHub/VulkanProject/VulkanProject/Shaders/mrt.frag.spv");
 	VkShaderModule deferredVertModule = _CreateShaderModule(deferredVert);
 	VkShaderModule deferredFragModule = _CreateShaderModule(deferredFrag);
-	VkShaderModule offScreenDeferredVertModule = _CreateShaderModule(deferredVert);
-	VkShaderModule offScreenDeferredFragModule = _CreateShaderModule(deferredVert);
+	VkShaderModule offScreenDeferredVertModule = _CreateShaderModule(offScreenVert);
+	VkShaderModule offScreenDeferredFragModule = _CreateShaderModule(offScreenFrag);
 
 	//set up create info handle for vert shader
 	VkPipelineShaderStageCreateInfo deferredVertStageCreateInfo = {};
@@ -154,6 +240,10 @@ void VulkanDeferredApplication::_CreateGraphicsPipeline()
 	shaderStages[1] = deferredFragStageCreateInfo;
 
 	//Do not do any vertex input, quads are generated by the vertex shader
+	VkPipelineTessellationStateCreateInfo tesellationStateCreateInfo = {};
+	tesellationStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO;
+	pipelineCreateInfo.pTessellationState = &tesellationStateCreateInfo;
+
 	VkPipelineVertexInputStateCreateInfo emptyVertexInputState = {};
 	emptyVertexInputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 	pipelineCreateInfo.pVertexInputState = &emptyVertexInputState;
@@ -380,12 +470,12 @@ void VulkanDeferredApplication::SetUpUniformBuffers()
 	memcpy(data, &offScreenUniformVSData, sizeof(uboVS));
 	vkUnmapMemory(_renderer->GetVulkanDevice(), offScreenVertexUBOBuffer.memory);
 
-	void* data;
+	data = NULL;
 	vkMapMemory(_renderer->GetVulkanDevice(), fullScreenVertexUBOBuffer.memory, 0, sizeof(uboVS), 0, &data);
 	memcpy(data, &fullScreenUniformVSData, sizeof(uboVS));
 	vkUnmapMemory(_renderer->GetVulkanDevice(), fullScreenVertexUBOBuffer.memory);
 
-	void* data;
+	data = NULL;
 	vkMapMemory(_renderer->GetVulkanDevice(), lightUBOBuffer.memory, 0, sizeof(uboFragmentLights), 0, &data);
 	memcpy(data, &lights, sizeof(uboFragmentLights));
 	vkUnmapMemory(_renderer->GetVulkanDevice(), lightUBOBuffer.memory);
@@ -396,8 +486,8 @@ void VulkanDeferredApplication::CreateGBuffer()
 {
 	//Off Screen framebuffer for deferred rendering
 
-	deferredOffScreenFrameBuffer.width = TEX_DIMENSIONS;
-	deferredOffScreenFrameBuffer.height = TEX_DIMENSIONS;
+	deferredOffScreenFrameBuffer.width = 1000;
+	deferredOffScreenFrameBuffer.height = 800;
 
 	//Create the color attachments for each screen render
 	_CreateAttachment(VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, &deferredOffScreenFrameBuffer.position, deferredOffScreenFrameBuffer);
@@ -744,6 +834,7 @@ void VulkanDeferredApplication::CreateObjectBuffers()
 
 }
 
+//Scene Setup
 void VulkanDeferredApplication::SceneSetup()
 {
 	
@@ -762,6 +853,7 @@ void VulkanDeferredApplication::_CreateCommandBuffers()
 
 	vk::tools::ErrorCheck(vkAllocateCommandBuffers(_renderer->GetVulkanDevice(), &command_buffer_allocate_info, _drawCommandBuffers.data()));
 
+	//Use swapchain draw command buffers to draw the scene
 	for (size_t i = 0; i < _drawCommandBuffers.size(); i++)
 	{
 		VkCommandBufferBeginInfo command_buffer_begin_info = {};
@@ -787,7 +879,7 @@ void VulkanDeferredApplication::_CreateCommandBuffers()
 
 		vkCmdBeginRenderPass(_drawCommandBuffers[i], &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 
-			vkCmdBindPipeline(_drawCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelines[PipelineType::standard]);
+			vkCmdBindPipeline(_drawCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipelines[PipelineType::deferred]);
 
 			
 			VkBuffer vertexBuffers[] = { triangleMesh.vertexBuffer.buffer};
@@ -795,8 +887,7 @@ void VulkanDeferredApplication::_CreateCommandBuffers()
 
 			vkCmdBindVertexBuffers(_drawCommandBuffers[i], 0, 1, vertexBuffers, offsets);
 			vkCmdBindIndexBuffer(_drawCommandBuffers[i], triangleMesh.indicesBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
-			vkCmdBindDescriptorSets(_drawCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout[PipelineType::standard], 0, 1, &_descriptorSets[i], 0, nullptr);
-
+			vkCmdBindDescriptorSets(_drawCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout[PipelineType::deferred], 0, 1, &_descriptorSets[i], 0, nullptr);
 			vkCmdDrawIndexed(_drawCommandBuffers[i], static_cast<uint32_t>(triangleMesh.indices.size()), 1, 0, 0, 0);
 
 		vkCmdEndRenderPass(_drawCommandBuffers[i]);
@@ -809,22 +900,5 @@ void VulkanDeferredApplication::_CreateCommandBuffers()
 void VulkanDeferredApplication::_CreateDescriptorPool()
 {
 	VulkanWindow::_CreateDescriptorPool();
-
-	//std::array<VkDescriptorPoolSize, 2> pool_sizes = {};
-	//pool_sizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-	//pool_sizes[0].descriptorCount = static_cast<uint32_t>(_swapChainImages.size());
-	//pool_sizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	//pool_sizes[1].descriptorCount = static_cast<uint32_t>(_swapChainImages.size());
-	//
-	//
-	//VkDescriptorPoolCreateInfo pool_create_info = {};
-	//pool_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-	//pool_create_info.poolSizeCount = static_cast<uint32_t>(pool_sizes.size());
-	//pool_create_info.pPoolSizes = pool_sizes.data();
-	//pool_create_info.maxSets = static_cast<uint32_t>(_swapChainImages.size());
-	//
-	//vk::tools::ErrorCheck(vkCreateDescriptorPool(_renderer->GetVulkanDevice(), &pool_create_info, nullptr, &_descriptorPool));
-
-
 }
 

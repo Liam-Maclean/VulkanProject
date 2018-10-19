@@ -4,7 +4,7 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "Renderer.h"
 #include "Window.h"
-#include "VulkanApplication.h"
+#include "VulkanDeferredApplication.h"
 
 int main()
 {

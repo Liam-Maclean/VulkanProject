@@ -496,6 +496,7 @@ void VulkanWindow::_CreateCommandPool()
 //Method for creating command buffers from pools
 void VulkanWindow::_CreateCommandBuffers()
 {
+	
 }
 
 //Method for creating semaphores
@@ -1074,6 +1075,7 @@ void VulkanWindow::_CreateAttachment(VkFormat format, VkImageUsageFlagBits usage
 	{
 		//set the aspect mask to image color bit
 		aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 	}
 	//if the attachment we're using is the depth test
 	if (usageFlags & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
